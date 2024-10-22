@@ -6,18 +6,21 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Industry, Skill
 from .serializers import IndustrySerializer, SkillSerializer
-
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .serializers import UserProfileSerializer
 from drf_yasg.utils import swagger_auto_schema
-
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import UserProfile
 from .serializers import UserProfileSerializer
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import get_user_model
+
+CustomUser = get_user_model()
+
+from rest_framework.permissions import IsAuthenticated
 
 @api_view(['GET'])
 def get_user_by_id(request, user_id):
@@ -35,24 +38,56 @@ def get_user_by_id(request, user_id):
         }, status=404)
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from drf_yasg.utils import swagger_auto_schema
+from .serializers import UserProfileSerializer
+from .models import UserProfile
+from django.shortcuts import get_object_or_404
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from drf_yasg.utils import swagger_auto_schema
+from .serializers import UserProfileSerializer
+from .models import UserProfile
+from django.shortcuts import get_object_or_404
+
 class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]  # Ensure user is authenticated
+
     @swagger_auto_schema(request_body=UserProfileSerializer)
     def post(self, request, *args, **kwargs):
-        serializer = UserProfileSerializer(data=request.data)
+        user = request.user  # Get the authenticated user
+        data = request.data.copy()
+        data['user_id'] = user.id  # Set the user_id from authenticated user
+
+        # Check if the profile already exists for the user
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            serializer = UserProfileSerializer(user_profile, data=data, partial=True)  # Allow partial update
+            message = "Profile updated successfully"
+        except UserProfile.DoesNotExist:
+            serializer = UserProfileSerializer(data=data)
+            message = "Profile created successfully"
+
+        # Validate and save the profile data
         if serializer.is_valid():
-            # Save or update user profile
-            serializer.save()
+            serializer.save()  # Save the profile data
 
             return Response({
                 "status": {
                     "type": "success",
-                    "message": "Profile updated successfully",
+                    "message": message,
                     "code": 200,
                     "error": False
                 },
                 "data": serializer.data
-            }, status=status.HTTP_200_OK)
-        
+            }, status=status.HTTP_201_CREATED)  # Return 201 for created
+
         return Response({
             "status": {
                 "type": "error",
@@ -63,11 +98,15 @@ class UserProfileView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
-
 class IndustryListView(APIView):
+    permission_classes = [IsAuthenticated]  # Require authentication
+
     def post(self, request):
-        user_id = request.data.get('user_id')
-        mobile_or_email = request.data.get('mobile_or_email')
+        user = request.user  # This will now be an authenticated user
+
+        # Get the user_id and mobile_or_email from the custom user model
+        user_id = user.id  # Get the authenticated user's ID
+        mobile_or_email = user.mobile_or_email  # Get the mobile or email from the user
 
         # You can add user validation logic here if needed
 
@@ -80,14 +119,21 @@ class IndustryListView(APIView):
                 "code": 200,
                 "error": False
             },
-            "data": serializer.data
+            "data": serializer.data,
+            "user_id": user_id,
+            "mobile_or_email": mobile_or_email
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
 
 class SkillListView(APIView):
     def post(self, request):
-        user_id = request.data.get('User_id')
+        user = request.user  # Get the currently logged-in user
+
+        # Get the user_id and mobile_or_email from the custom user model
+        user_id = user.id  # Or user.user_id if your custom model has a field named user_id
+        mobile_or_email = user.mobile_or_email  # Assuming this field exists in your custom user model
+
         industry_ids = request.data.get('industry_id', '').split(',')
 
         # You can add user validation logic here if needed
@@ -101,6 +147,8 @@ class SkillListView(APIView):
                 "code": 200,
                 "error": False
             },
-            "data": serializer.data
+            "data": serializer.data,
+            "user_id": user_id,
+            "mobile_or_email": mobile_or_email
         }
         return Response(response_data, status=status.HTTP_200_OK)

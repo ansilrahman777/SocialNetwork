@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'crea_app',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'drf_yasg',
     'profiles',
     'storages',
@@ -121,6 +122,16 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # Use Token Authentication
+        'rest_framework.authentication.SessionAuthentication',  # Or Session-based Authentication
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # Ensure only authenticated users can access
+    ],
+}
 
 
 # Internationalization

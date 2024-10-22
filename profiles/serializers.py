@@ -1,9 +1,14 @@
 from rest_framework import serializers
 from .models import Industry, Skill
-
 from .models import UserProfile
+from django.contrib.auth import get_user_model
+
+CustomUser = get_user_model()
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    mobile_or_email = serializers.CharField(source='user.mobile_or_email', read_only=True)  # Assuming this field exists
+
     class Meta:
         model = UserProfile
         fields = [
