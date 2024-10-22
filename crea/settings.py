@@ -177,3 +177,12 @@ END_POINT_URL = "s3.us-east-005.backblazeb2.com"
 
 # Optional: Define your B2 file path if needed
 DEFAULT_FILE_STORAGE = 'crea_app.backblaze_storage.BackblazeStorage'
+
+DJANGO_SETTINGS_MODULE='crea.settings'
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
