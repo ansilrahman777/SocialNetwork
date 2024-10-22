@@ -2,6 +2,7 @@ from django.core.files.storage import Storage
 import b2sdk.v2 as b2
 from django.conf import settings
 
+
 class BackblazeStorage(Storage):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
