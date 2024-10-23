@@ -125,11 +125,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',  # Use Token Authentication
-        'rest_framework.authentication.SessionAuthentication',  # Or Session-based Authentication
+        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',  # Ensure only authenticated users can access
+        'rest_framework.permissions.IsAuthenticated',
     ],
 }
 

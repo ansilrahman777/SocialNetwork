@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from rest_framework.authtoken.models import Token
+# from django.contrib.auth.models import CustomUser
+
 
 CustomUser = get_user_model()
 
@@ -9,8 +10,8 @@ class UserProfile(models.Model):
         ('1', 'Admin'),
         ('2', 'Regular User'),
     ]
-
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="profile", null=True)  # Temporarily allow null
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    mobile_or_email = models.CharField(max_length=100,null=True)
     user_type = models.CharField(max_length=1, choices=USER_TYPE_CHOICES)
     selected_industries = models.CharField(max_length=100)  # Comma-separated values
     selected_primary_industry = models.CharField(max_length=10)
@@ -25,13 +26,8 @@ class UserProfile(models.Model):
     height = models.DecimalField(max_digits=5, decimal_places=1)
     weight = models.CharField(max_length=10)
 
-    @property
-    def mobile_or_email(self):
-        return self.user.mobile_or_email if self.user else None
-
     def __str__(self):
         return f"{self.user.username}'s profile" if self.user else "UserProfile without user"
-
 
 
 class Industry(models.Model):

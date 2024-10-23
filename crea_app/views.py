@@ -21,6 +21,11 @@ from rest_framework.views import APIView
 from .models import OnboardingImage
 from .serializers import OnboardingImageSerializer
 from .backblaze_storage import upload_to_backblaze 
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import authenticate
+
 
 class OnboardingAPIView(APIView):
     def get(self, request, pk=None):
@@ -211,6 +216,9 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+from rest_framework.authtoken.models import Token
+
 class LoginView(APIView):
     @swagger_auto_schema(request_body=UserSerializer)
     def post(self, request):
@@ -220,9 +228,8 @@ class LoginView(APIView):
         try:
             user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
             if user.check_password(password):
-                # Generate session token logic here
-                session_token = str(random.randint(10000000, 99999999))  # Example token
-                session = UserSession.objects.create(user=user, session_token=session_token)
+                # Generate or retrieve the token
+                token, created = Token.objects.get_or_create(user=user)
 
                 return Response({
                     "status": {
@@ -237,10 +244,9 @@ class LoginView(APIView):
                             "email": user.mobile_or_email,
                             "user_id": user.id,
                             "user_status": user.user_status,
-                            "login_method": "1",  # Assuming traditional login
+                            "login_method": "1",
                         },
-                        "expires_at": session.expires_at,
-                        "session_token": session.session_token
+                        "token": token.key,  # Token returned here
                     }]
                 }, status=status.HTTP_200_OK)
             else:
@@ -251,11 +257,11 @@ class LoginView(APIView):
 
 class VerifyOTPView(APIView):
     def post(self, request):
-        user_id = request.data.get('user_id')
+        mobile_or_email = request.data.get('mobile_or_email')
         otp_received = request.data.get('otp_received')
 
         try:
-            otp_verification = OTPVerification.objects.get(user_id=user_id, otp=otp_received)
+            otp_verification = OTPVerification.objects.get(mobile_or_email=mobile_or_email, otp=otp_received)
             if timezone.now() > otp_verification.otp_expires_at:
                 return Response({"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -280,11 +286,11 @@ class VerifyOTPView(APIView):
 
 class ResendOTPView(APIView):
     def post(self, request):
-        user_id = request.data.get('user_id')
+        # user_id = request.data.get('user_id')
         mobile_or_email = request.data.get('mobile_or_email')
 
         try:
-            user = CustomUser.objects.get(id=user_id, mobile_or_email=mobile_or_email)
+            user = CustomUser.objects.get( mobile_or_email=mobile_or_email)
             otp = str(random.randint(100000, 999999))  # Generate a new OTP
             otp_verification = OTPVerification.objects.create(user=user, otp=otp)
 

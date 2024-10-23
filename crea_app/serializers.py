@@ -52,7 +52,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class OTPSerializer(serializers.ModelSerializer):
     class Meta:
         model = OTPVerification
-        fields = ['user', 'otp', 'otp_expires_at', 'is_verified']
+        fields = ['user','mobile_or_email', 'otp', 'otp_expires_at', 'is_verified']
 
 
     

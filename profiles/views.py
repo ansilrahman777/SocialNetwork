@@ -6,21 +6,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Industry, Skill
 from .serializers import IndustrySerializer, SkillSerializer
-from rest_framework import status
-from rest_framework.response import Response
+from django.shortcuts import render
 from rest_framework.views import APIView
-from .serializers import UserProfileSerializer
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from .models import UserProfile
 from .serializers import UserProfileSerializer
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
 
-CustomUser = get_user_model()
-
-from rest_framework.permissions import IsAuthenticated
 
 @api_view(['GET'])
 def get_user_by_id(request, user_id):
@@ -35,68 +30,50 @@ def get_user_by_id(request, user_id):
         return Response({
             'status': 'error',
             'message': 'User not found'
-        }, status=404)
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from drf_yasg.utils import swagger_auto_schema
-from .serializers import UserProfileSerializer
-from .models import UserProfile
-from django.shortcuts import get_object_or_404
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from drf_yasg.utils import swagger_auto_schema
-from .serializers import UserProfileSerializer
-from .models import UserProfile
-from django.shortcuts import get_object_or_404
+        }, status=status.HTTP_404_NOT_FOUND)
+    
 
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]  # Ensure user is authenticated
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(request_body=UserProfileSerializer)
     def post(self, request, *args, **kwargs):
-        user = request.user  # Get the authenticated user
+        user = request.user
         data = request.data.copy()
-        data['user_id'] = user.id  # Set the user_id from authenticated user
+        data['user'] = user.id  # Ensure you set the user ID
 
-        # Check if the profile already exists for the user
         try:
             user_profile = UserProfile.objects.get(user=user)
-            serializer = UserProfileSerializer(user_profile, data=data, partial=True)  # Allow partial update
+            serializer = UserProfileSerializer(user_profile, data=data, partial=True)
             message = "Profile updated successfully"
+            status_code = status.HTTP_200_OK
         except UserProfile.DoesNotExist:
             serializer = UserProfileSerializer(data=data)
             message = "Profile created successfully"
+            status_code = status.HTTP_201_CREATED
 
-        # Validate and save the profile data
         if serializer.is_valid():
-            serializer.save()  # Save the profile data
-
+            serializer.save()
             return Response({
                 "status": {
                     "type": "success",
                     "message": message,
-                    "code": 200,
+                    "code": status_code,
                     "error": False
                 },
                 "data": serializer.data
-            }, status=status.HTTP_201_CREATED)  # Return 201 for created
+            }, status=status_code)
 
         return Response({
             "status": {
                 "type": "error",
                 "message": "Invalid data",
-                "code": 400,
+                "code": status.HTTP_400_BAD_REQUEST,
                 "error": True
             },
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class IndustryListView(APIView):
     permission_classes = [IsAuthenticated]  # Require authentication
