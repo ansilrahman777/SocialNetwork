@@ -45,10 +45,11 @@ INSTALLED_APPS = [
     'crea_app',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'drf_yasg',
-    'profiles',
     'storages',
     'b2sdk',
+    'profile_app',
 ]
 
 MIDDLEWARE = [
@@ -121,6 +122,15 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 
 # Internationalization
