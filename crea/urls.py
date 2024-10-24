@@ -25,7 +25,9 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('crea_app.urls')),
-    path('api/profile/', include('profiles.urls')),
+    # path('api/profile/', include('profiles.urls')),
+    path('api/profile/', include('profile_app.urls')),
+
     # path('api/gigwork/', include('gigwork.urls')), 
     
      ]

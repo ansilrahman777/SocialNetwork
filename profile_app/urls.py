@@ -3,7 +3,6 @@ from .views import IndustryListView, SkillListView ,UserProfileView
 from .views import get_user_by_id
 
 urlpatterns = [
-    # path('user_profile/', UserProfileView.as_view(), name='update_profile'),
     path('profile_create/', UserProfileView.as_view(), name='profile-create'),
     path('api/user/<str:user_id>/', get_user_by_id, name='get_user_by_id'),
     path('getindustry/', IndustryListView.as_view(), name='get-industry'),

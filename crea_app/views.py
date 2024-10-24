@@ -25,6 +25,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
+from rest_framework.permissions import AllowAny
 
 
 class OnboardingAPIView(APIView):
@@ -167,7 +168,10 @@ class OnboardingAPIView(APIView):
                 "message": "Onboarding image not found."
             }, status=status.HTTP_404_NOT_FOUND)
 
+
+
 class RegisterView(APIView):
+    permission_classes = [AllowAny]  # Ensure this is defined correctly
     @swagger_auto_schema(request_body=RegisterSerializer)
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -215,11 +219,8 @@ class RegisterView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-from rest_framework.authtoken.models import Token
-
 class LoginView(APIView):
+    permission_classes = [AllowAny]
     @swagger_auto_schema(request_body=UserSerializer)
     def post(self, request):
         mobile_or_email = request.data.get('mobile_or_email')
