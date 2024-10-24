@@ -261,8 +261,17 @@ class VerifyOTPView(APIView):
         mobile_or_email = request.data.get('mobile_or_email')
         otp_received = request.data.get('otp_received')
 
+        User = get_user_model()
+        
+        # Retrieve the user based on mobile or email
         try:
-            otp_verification = OTPVerification.objects.get(mobile_or_email=mobile_or_email, otp=otp_received)
+            user = User.objects.get(mobile_or_email=mobile_or_email)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Now use the user to find the OTPVerification
+        try:
+            otp_verification = OTPVerification.objects.get(user=user, otp=otp_received)
             if timezone.now() > otp_verification.otp_expires_at:
                 return Response({"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -283,8 +292,7 @@ class VerifyOTPView(APIView):
 
         except OTPVerification.DoesNotExist:
             return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
-
-
+        
 class ResendOTPView(APIView):
     def post(self, request):
         # user_id = request.data.get('user_id')

@@ -6,6 +6,13 @@ from rest_framework.decorators import api_view
 from .models import UserProfile, Industry, Skill
 from .serializers import UserProfileSerializer, IndustrySerializer, SkillSerializer
 from drf_yasg.utils import swagger_auto_schema
+from django.shortcuts import render
+from .serializers import AadharVerificationSerializer
+from .serializers import DriverLicenseVerificationSerializer,PassportVerificationSerializer
+from crea_app.backblaze_storage import BackblazeStorage
+from .models import CustomUser
+
+
 
 @api_view(['GET'])
 def get_user_by_id(request, user_id):
@@ -86,3 +93,176 @@ class SkillListView(APIView):
             "user_id": user.id,
             "mobile_or_email": user.mobile_or_email
         }, status=status.HTTP_200_OK)
+
+
+class AadharVerificationView(APIView):
+    def post(self, request):
+        data = request.data.copy()
+        mobile_or_email = data.get("mobile_or_email")
+
+        if not mobile_or_email:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "mobile_or_email is required.",
+                    "code": 400,
+                    "error": True
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch user based on mobile_or_email
+        try:
+            user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
+            data['user'] = user.id  # Assuming your serializer requires a user field
+        except CustomUser.DoesNotExist:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "User not found.",
+                    "code": 404,
+                    "error": True
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AadharVerificationSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            response_data = {
+                "status": {
+                    "type": "success",
+                    "message": "Aadhar Update Successfully",
+                    "code": 200,
+                    "error": False
+                },
+                "data": [
+                    {
+                        "status": "Document pending",
+                        "verify_status": "1"
+                    }
+                ]
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        return Response({
+            "status": {
+                "type": "error",
+                "message": "Validation Failed",
+                "code": 400,
+                "error": True
+            },
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+class PassportVerificationView(APIView):
+    def post(self, request):
+        data = request.data.copy()
+        mobile_or_email = data.get("mobile_or_email")
+
+        if not mobile_or_email:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "mobile_or_email is required.",
+                    "code": 400,
+                    "error": True
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
+            data['user'] = user.id
+        except CustomUser.DoesNotExist:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "User not found.",
+                    "code": 404,
+                    "error": True
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PassportVerificationSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            response_data = {
+                "status": {
+                    "type": "success",
+                    "message": "Passport Update Successfully",
+                    "code": 200,
+                    "error": False
+                },
+                "data": [
+                    {
+                        "status": "Document pending",
+                        "verify_status": "2"
+                    }
+                ]
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        return Response({
+            "status": {
+                "type": "error",
+                "message": "Validation Failed",
+                "code": 400,
+                "error": True
+            },
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+class DriverLicenseVerificationView(APIView):
+    def post(self, request):
+        data = request.data.copy()
+        mobile_or_email = data.get("mobile_or_email")
+
+        if not mobile_or_email:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "mobile_or_email is required.",
+                    "code": 400,
+                    "error": True
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
+            data['user'] = user.id
+        except CustomUser.DoesNotExist:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "User not found.",
+                    "code": 404,
+                    "error": True
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DriverLicenseVerificationSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            response_data = {
+                "status": {
+                    "type": "success",
+                    "message": "Driver’s License Update Successfully",
+                    "code": 200,
+                    "error": False
+                },
+                "data": [
+                    {
+                        "status": "Verification Completed",
+                        "verify_status": "3"
+                    }
+                ]
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        return Response({
+            "status": {
+                "type": "error",
+                "message": "Validation Failed",
+                "code": 400,
+                "error": True
+            },
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
