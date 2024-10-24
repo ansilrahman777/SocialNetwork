@@ -95,9 +95,9 @@ WSGI_APPLICATION = 'crea.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'crea',  
-        'USER': 'crea_user',
-        'PASSWORD': 'Gobu@0306',
+        'NAME': 'crea_db',  
+        'USER': 'root',
+        'PASSWORD': 'ansil',
         'HOST': 'localhost',
         'PORT': '3306',            
     }
@@ -187,3 +187,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+load_dotenv()
+
+MSG91_API_KEY = os.getenv('MSG91_API_KEY')
+MSG91_SMS_TEMPLATE_ID = os.getenv('MSG91_SMS_TEMPLATE_ID')
+MSG91_SMS_SENDER_ID = os.getenv('MSG91_SMS_SENDER_ID')
+MSG91_EMAIL_SENDER_NAME = os.getenv('MSG91_EMAIL_SENDER_NAME')

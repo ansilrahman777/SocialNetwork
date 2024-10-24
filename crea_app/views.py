@@ -21,6 +21,10 @@ from rest_framework.views import APIView
 from .models import OnboardingImage
 from .serializers import OnboardingImageSerializer
 from .backblaze_storage import upload_to_backblaze 
+from .utils import send_otp_via_sms
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from datetime import timedelta
 
 class OnboardingAPIView(APIView):
     def get(self, request, pk=None):
@@ -168,18 +172,47 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            otp = str(random.randint(100000, 999999))  # Generate a random OTP
-            otp_verification = OTPVerification.objects.create(user=user, otp=otp)
 
             try:
-                # Send OTP via Email
-                send_mail(
-                    'Your OTP Code',
-                    f'Your OTP code is {otp}. It is valid for 10 minutes.',
-                    settings.EMAIL_HOST_USER,  # Use settings for email
-                    [user.mobile_or_email],
-                    fail_silently=False,
-                )
+                is_email = False
+                try:
+                    validate_email(user.mobile_or_email)
+                    is_email = True
+                except ValidationError:
+                    pass
+
+                if is_email:
+                    otp = str(random.randint(100000, 999999))
+                    otp_verification = OTPVerification.objects.create(user=user, otp=otp, otp_expires_at=timezone.now() + timedelta(minutes=10))
+
+                    # Send OTP via Email
+                    send_mail(
+                        'Your OTP Code',
+                        f'Your OTP code is {otp}. It is valid for 10 minutes.',
+                        settings.EMAIL_HOST_USER,
+                        [user.mobile_or_email],
+                        fail_silently=False,
+                    )
+                    success_message = "OTP Sent to your Email address"
+                else:
+                    otp = str(random.randint(100000, 999999))
+                    response_data = send_otp_via_sms(user.mobile_or_email, otp)
+
+                    if response_data.get('type') == 'success':
+                        # Store the OTP in the database with expiration time
+                        otp_verification = OTPVerification.objects.create(user=user, otp=otp, otp_expires_at=timezone.now() + timedelta(minutes=10))
+
+                        success_message = "OTP Sent to your Mobile number"
+                    else:
+                        return Response({
+                            "status": {
+                                "type": "error",
+                                "message": "Failed to send OTP. Please try again.",
+                                "code": 500,
+                                "error": True
+                            }
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             except Exception as e:
                 return Response({
                     "status": {
@@ -193,18 +226,18 @@ class RegisterView(APIView):
             return Response({
                 "status": {
                     "type": "success",
-                    "message": "OTP Sent to your Email address",
+                    "message": success_message,
                     "code": 200,
                     "error": False
                 },
                 "data": [{
                     "status": "verification pending",
                     "user": {
-                        "email": user.mobile_or_email,
+                        "email_or_mobile": user.mobile_or_email,
                         "user_id": user.id,
-                        "otp": otp,
+                        "otp": otp if is_email else None,
                     },
-                    "otpexpires_at": otp_verification.otp_expires_at
+                    "otpexpires_at": otp_verification.otp_expires_at if is_email else None
                 }]
             }, status=status.HTTP_200_OK)
 
