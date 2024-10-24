@@ -255,8 +255,9 @@ class LoginView(APIView):
         except CustomUser.DoesNotExist:
             return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
 
-
 class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         mobile_or_email = request.data.get('mobile_or_email')
         otp_received = request.data.get('otp_received')
@@ -275,8 +276,12 @@ class VerifyOTPView(APIView):
             if timezone.now() > otp_verification.otp_expires_at:
                 return Response({"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
 
+            # Mark the OTP as verified
             otp_verification.is_verified = True
             otp_verification.save()
+
+            # Optionally, generate a token or login user here
+            # For example, you might want to create a token for the session
 
             return Response({
                 "status": {
@@ -287,19 +292,22 @@ class VerifyOTPView(APIView):
                 },
                 "data": [{
                     "status": "Authenticated"
+                    # Include token or user information here if needed
                 }]
             }, status=status.HTTP_200_OK)
 
         except OTPVerification.DoesNotExist:
             return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
 class ResendOTPView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        # user_id = request.data.get('user_id')
         mobile_or_email = request.data.get('mobile_or_email')
 
         try:
-            user = CustomUser.objects.get( mobile_or_email=mobile_or_email)
+            user = get_user_model().objects.get(mobile_or_email=mobile_or_email)
             otp = str(random.randint(100000, 999999))  # Generate a new OTP
             otp_verification = OTPVerification.objects.create(user=user, otp=otp)
 
@@ -326,7 +334,7 @@ class ResendOTPView(APIView):
                 }]
             }, status=status.HTTP_200_OK)
 
-        except CustomUser.DoesNotExist:
+        except get_user_model().DoesNotExist:
             return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
 
 CustomUser = get_user_model()
