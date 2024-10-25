@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'storages',
     'b2sdk',
-    'profile_app',
+    'userprofile_app',
 ]
 
 MIDDLEWARE = [
@@ -96,7 +96,7 @@ WSGI_APPLICATION = 'crea.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'crea_db',  
+        'NAME': 'creanet_database',  
         'USER': 'root',
         'PASSWORD': 'ansil',
         'HOST': 'localhost',
@@ -128,7 +128,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
 }
 
