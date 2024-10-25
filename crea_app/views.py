@@ -28,6 +28,7 @@ from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny
 
 
+
 class OnboardingAPIView(APIView):
     def get(self, request, pk=None):
         # Check if a specific onboarding image is requested
@@ -337,20 +338,19 @@ class ResendOTPView(APIView):
         except get_user_model().DoesNotExist:
             return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
 
-CustomUser = get_user_model()
 
 class ResetPasswordView(generics.GenericAPIView):
+    permission_classes = [AllowAny]  # Ensure this is defined correctly
     serializer_class = ResetPasswordSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            user_id = serializer.validated_data['user_id']
             mobile_or_email = serializer.validated_data['mobile_or_email']
             
             try:
-                # Update this line to use the correct field name
-                user = CustomUser.objects.get(id=user_id, mobile_or_email=mobile_or_email)
+                # Find user by mobile or email
+                user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
                 otp = str(random.randint(100000, 999999))  # Generate OTP
                 reset_token = 'resetToken12345'  # In practice, generate a secure token
                 
@@ -399,18 +399,20 @@ class ResetPasswordView(generics.GenericAPIView):
                 }, status=status.HTTP_404_NOT_FOUND)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 class ChangePasswordView(generics.GenericAPIView):
+    permission_classes = [AllowAny]  # Ensure this is defined correctly
     serializer_class = ChangePasswordSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            user_id = serializer.validated_data['user_id']
+            mobile_or_email = serializer.validated_data['mobile_or_email']
             new_password = serializer.validated_data['new_password']
 
             try:
-                user = CustomUser.objects.get(id=user_id)
+                # Find user by mobile or email
+                user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
                 user.set_password(new_password)  # Set the new password
                 user.save()
 
@@ -440,5 +442,3 @@ class ChangePasswordView(generics.GenericAPIView):
                 }, status=status.HTTP_404_NOT_FOUND)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-

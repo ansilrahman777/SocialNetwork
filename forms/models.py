@@ -128,8 +128,8 @@ class BankDetails(models.Model):
         return f"{self.beneficiary_name} - {self.bank_name}"
 
 class Uploads(models.Model):  
-    pan_card = models.FileField(upload_to='uploads/pan_cards/')  
-    cancelled_cheque = models.FileField(upload_to='uploads/cheques/')  
+    pan_card = models.FileField(upload_to='pan_cards/')  
+    cancelled_cheque = models.FileField(upload_to='cheques/')  
 
     def __str__(self):
         return f"Uploads for {self.pan_card.name}"
@@ -165,6 +165,7 @@ class EventRegistration(models.Model):
 
     def __str__(self):
         return f"{self.organization_name} - {self.event_details.event_title}"
+    
     
 
 class Internship(models.Model):

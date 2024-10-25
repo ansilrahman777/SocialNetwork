@@ -71,6 +71,9 @@ class BankDetailsSerializer(serializers.ModelSerializer):
         model = BankDetails
         fields = '__all__'
 
+import os
+from rest_framework import serializers
+
 class UploadsSerializer(serializers.ModelSerializer):
     pan_card = serializers.FileField()
     cancelled_cheque = serializers.FileField()
@@ -80,13 +83,28 @@ class UploadsSerializer(serializers.ModelSerializer):
         fields = ['pan_card', 'cancelled_cheque']
 
     def validate(self, attrs):
+        """Ensure uploaded files have valid names and sanitize them."""
         for field_name, file in attrs.items():
             if file:
-                # Perform validation on the file name
+                # Validate that the file name doesn't contain backslashes or other invalid characters
                 if '\\' in file.name:
-                    raise serializers.ValidationError(f"File name for {field_name} must not contain '\\'")
-        return attrs
+                    raise serializers.ValidationError(
+                        f"File name for {field_name} must not contain '\\'."
+                    )
+                
+                # Sanitize the file name
+                sanitized_name = os.path.basename(file.name).replace('\\', '')
+                if sanitized_name != file.name:
+                    file.name = sanitized_name  # Assign sanitized name back to the file
 
+                # Additional validation for invalid characters (optional)
+                invalid_chars = ['/', ':', '*', '?', '"', '<', '>', '|']
+                if any(char in sanitized_name for char in invalid_chars):
+                    raise serializers.ValidationError(
+                        f"File name for {field_name} contains invalid characters: {', '.join(invalid_chars)}."
+                    )
+
+        return attrs
 
 class EventDetailsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -130,7 +148,7 @@ class InternshipSerializer(serializers.ModelSerializer):
         model = Internship
         fields = [
             'name', 'designation', 
-            'enter_email_address', 'mobile_number', 'organisation_name',
+            'email', 'mobile_number', 'organisation_name',
             'intern_method', 'internship_title', 'skills_list', 
             'internship_type', 'type_of_work', 'start_date', 
             'end_date', 'job_responsibilities', 'duration'
@@ -141,7 +159,7 @@ class ApprenticeshipSerializer(serializers.ModelSerializer):
         model = Apprenticeship
         fields = [
             'name', 'designation', 
-            'enter_email_address', 'mobile_number', 'organisation_name',
+            'email', 'mobile_number', 'organisation_name',
             'apprenticeship_method', 'apprenticeship_title', 
             'skills_list', 'apprenticeship_type', 'type_of_work', 
             'start_date', 'end_date', 'job_responsibilities', 'duration'

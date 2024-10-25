@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from .models import EventRegistration, Internship, Apprenticeship
+from rest_framework.authentication import TokenAuthentication
 from .serializers import EventRegistrationSerializer,InternshipSerializer,ApprenticeshipSerializer
 
 
@@ -118,6 +119,7 @@ class PostFeedView(generics.CreateAPIView):
     queryset = PostFeed.objects.all()
     serializer_class = PostFeedSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Ensure TokenAuthentication is used
     parser_classes = [MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
@@ -184,15 +186,17 @@ class InternshipCreateView(APIView):
 # ----------------------------
 # Event Registration View
 # ----------------------------
+
+
 class EventRegistrationCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(request_body=EventRegistrationSerializer)
     def post(self, request):
-        serializer = EventRegistrationSerializer(data=request.data, context={'request': request})  # Pass request context
+        serializer = EventRegistrationSerializer(data=request.data, context={'request': request})
 
         if serializer.is_valid():
-            event_registration = serializer.save()  # Call save without user, as it is set in the serializer
+            event_registration = serializer.save()  # Calls the create method of the serializer
             return Response({
                 "status": {
                     "type": "success",
@@ -216,6 +220,7 @@ class EventRegistrationCreateView(APIView):
                 "errors": serializer.errors
             }
         }, status=status.HTTP_400_BAD_REQUEST)
+
 
 # ----------------------------
 # Apprenticeship View
