@@ -110,6 +110,8 @@ class EventDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventDetails
         fields = '__all__'
+from rest_framework import serializers
+from .models import EventRegistration, BankDetails, Uploads, EventDetails
 
 class EventRegistrationSerializer(serializers.ModelSerializer):
     bank_details = BankDetailsSerializer()
@@ -121,7 +123,7 @@ class EventRegistrationSerializer(serializers.ModelSerializer):
         exclude = ['user']  # Exclude the user field
 
     def create(self, validated_data):
-        request = self.context['request']  # Get the request object from context
+        request = self.context['request']
 
         bank_data = validated_data.pop('bank_details')
         uploads_data = validated_data.pop('uploads')
@@ -134,13 +136,42 @@ class EventRegistrationSerializer(serializers.ModelSerializer):
 
         # Create event registration with related data and user
         event_registration = EventRegistration.objects.create(
-            user=request.user,  # Assign the authenticated user
+            user=request.user,
             bank_details=bank_details,
             uploads=uploads,
             event_details=event_details,
             **validated_data
         )
         return event_registration
+
+    def update(self, instance, validated_data):
+        # Update the instance fields
+        bank_data = validated_data.pop('bank_details', None)
+        uploads_data = validated_data.pop('uploads', None)
+        event_data = validated_data.pop('event_details', None)
+
+        # Update fields directly on the instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update related instances if provided
+        if bank_data:
+            for key, value in bank_data.items():
+                setattr(instance.bank_details, key, value)
+            instance.bank_details.save()
+
+        if uploads_data:
+            for key, value in uploads_data.items():
+                setattr(instance.uploads, key, value)
+            instance.uploads.save()
+
+        if event_data:
+            for key, value in event_data.items():
+                setattr(instance.event_details, key, value)
+            instance.event_details.save()
+
+        return instance
 
 
 class InternshipSerializer(serializers.ModelSerializer):

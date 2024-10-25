@@ -30,6 +30,7 @@ from rest_framework.permissions import AllowAny
 
 
 class OnboardingAPIView(APIView):
+    permission_classes = [AllowAny]  
     def get(self, request, pk=None):
         # Check if a specific onboarding image is requested
         if pk:

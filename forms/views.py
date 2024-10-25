@@ -5,7 +5,7 @@ from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth import get_user_model
-from .models import PostFeed
+from .models import PostFeed,GigWork,CastingCall,Project
 from .serializers import GigWorkSerializer, CastingCallSerializer, ProjectSerializer, PostFeedSerializer
 from rest_framework import status, generics
 from rest_framework.response import Response
@@ -51,6 +51,39 @@ class GigWorkFormView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
     
+    def get(self, request, pk=None):
+        if pk:
+            try:
+                gig_work = GigWork.objects.get(pk=pk)
+                serializer = GigWorkSerializer(gig_work)
+                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            except GigWork.DoesNotExist:
+                return Response({"message": "Gig work not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        gig_works = GigWork.objects.all()
+        serializer = GigWorkSerializer(gig_works, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        try:
+            gig_work = GigWork.objects.get(pk=pk)
+            serializer = GigWorkSerializer(gig_work, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Gig work updated successfully."}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except GigWork.DoesNotExist:
+            return Response({"message": "Gig work not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        try:
+            gig_work = GigWork.objects.get(pk=pk)
+            gig_work.delete()
+            return Response({"message": "Gig work deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except GigWork.DoesNotExist:
+            return Response({"message": "Gig work not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    
 class CastingCallFormView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
@@ -84,6 +117,39 @@ class CastingCallFormView(APIView):
             }
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    def get(self, request, pk=None):
+        if pk:
+            try:
+                casting_call = CastingCall.objects.get(pk=pk)
+                serializer = CastingCallSerializer(casting_call)
+                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            except CastingCall.DoesNotExist:
+                return Response({"message": "Casting call not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        casting_calls = CastingCall.objects.all()
+        serializer = CastingCallSerializer(casting_calls, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        try:
+            casting_call = CastingCall.objects.get(pk=pk)
+            serializer = CastingCallSerializer(casting_call, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Casting call updated successfully."}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except CastingCall.DoesNotExist:
+            return Response({"message": "Casting call not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        try:
+            casting_call = CastingCall.objects.get(pk=pk)
+            casting_call.delete()
+            return Response({"message": "Casting call deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except CastingCall.DoesNotExist:
+            return Response({"message": "Casting call not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
 class ProjectFormView(APIView):
     def post(self, request):
         serializer = ProjectSerializer(data=request.data, context={'request': request})  # Pass request context
@@ -112,6 +178,38 @@ class ProjectFormView(APIView):
                 "errors": serializer.errors
             }
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, pk=None):
+        if pk:
+            try:
+                project = Project.objects.get(pk=pk)
+                serializer = ProjectSerializer(project)
+                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            except Project.DoesNotExist:
+                return Response({"message": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        projects = Project.objects.all()
+        serializer = ProjectSerializer(projects, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        try:
+            project = Project.objects.get(pk=pk)
+            serializer = ProjectSerializer(project, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Project updated successfully."}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Project.DoesNotExist:
+            return Response({"message": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        try:
+            project = Project.objects.get(pk=pk)
+            project.delete()
+            return Response({"message": "Project deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except Project.DoesNotExist:
+            return Response({"message": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 
@@ -149,6 +247,38 @@ class PostFeedView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 
+    def get(self, request, pk=None):
+        if pk:
+            try:
+                post = PostFeed.objects.get(pk=pk)
+                serializer = PostFeedSerializer(post)
+                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            except PostFeed.DoesNotExist:
+                return Response({"message": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        posts = PostFeed.objects.all()
+        serializer = PostFeedSerializer(posts, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        try:
+            post = PostFeed.objects.get(pk=pk)
+            serializer = PostFeedSerializer(post, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Post updated successfully."}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except PostFeed.DoesNotExist:
+            return Response({"message": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        try:
+            post = PostFeed.objects.get(pk=pk)
+            post.delete()
+            return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except PostFeed.DoesNotExist:
+            return Response({"message": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
 # ----------------------------
 # Internship View
 # ----------------------------
@@ -182,11 +312,50 @@ class InternshipCreateView(APIView):
                 "errors": serializer.errors
             }
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def get(self, request, user_id=None):
+        if user_id:
+            try:
+                internship = Internship.objects.get(user_id=user_id)
+                serializer = InternshipSerializer(internship)
+                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            except Internship.DoesNotExist:
+                return Response({"message": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        internships = Internship.objects.all()
+        serializer = InternshipSerializer(internships, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request, user_id):
+        try:
+            internship = Internship.objects.get(user_id=user_id)
+            serializer = InternshipSerializer(internship, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Internship updated successfully."}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Internship.DoesNotExist:
+            return Response({"message": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, user_id):
+        try:
+            internship = Internship.objects.get(user_id=user_id)
+            internship.delete()
+            return Response({"message": "Internship deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except Internship.DoesNotExist:
+            return Response({"message": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 # ----------------------------
 # Event Registration View
 # ----------------------------
 
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from drf_yasg.utils import swagger_auto_schema
 
 class EventRegistrationCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -220,6 +389,35 @@ class EventRegistrationCreateView(APIView):
                 "errors": serializer.errors
             }
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, user_id):
+        if user_id:
+            try:
+            # Use the primary key (pk) to fetch the event registration
+                event_registration = EventRegistration.objects.get(user_id=user_id)
+                serializer = EventRegistrationSerializer(event_registration)
+                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            except EventRegistration.DoesNotExist:
+                return Response({"message": "Event registration not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, user_id):
+        try:
+            event_registration = EventRegistration.objects.get(user_id=user_id)
+            serializer = EventRegistrationSerializer(event_registration, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Event registration updated successfully."}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except EventRegistration.DoesNotExist:
+            return Response({"message": "Event registration not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, user_id):
+        try:
+            event_registration = EventRegistration.objects.get(user_id=user_id)
+            event_registration.delete()
+            return Response({"message": "Event registration deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except EventRegistration.DoesNotExist:
+            return Response({"message": "Event registration not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
 # ----------------------------
@@ -255,3 +453,36 @@ class ApprenticeshipCreateView(APIView):
                 "errors": serializer.errors
             }
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def get(self, request, user_id=None):
+        if user_id:
+            try:
+                apprenticeship = Apprenticeship.objects.get(user_id=user_id)
+                serializer = ApprenticeshipSerializer(apprenticeship)
+                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            except Apprenticeship.DoesNotExist:
+                return Response({"message": "Apprenticeship not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        apprenticeships = Apprenticeship.objects.all()
+        serializer = ApprenticeshipSerializer(apprenticeships, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request, user_id):
+        try:
+            apprenticeship = Apprenticeship.objects.get(user_id=user_id)
+            serializer = ApprenticeshipSerializer(apprenticeship, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Apprenticeship updated successfully."}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Apprenticeship.DoesNotExist:
+            return Response({"message": "Apprenticeship not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, user_id):
+        try:
+            apprenticeship = Apprenticeship.objects.get(user_id=user_id)
+            apprenticeship.delete()
+            return Response({"message": "Apprenticeship deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except Apprenticeship.DoesNotExist:
+            return Response({"message": "Apprenticeship not found."}, status=status.HTTP_404_NOT_FOUND)
