@@ -1,8 +1,8 @@
 from django.urls import path
 from .views import (
-    RoleListView, RoleSelectionView, IndustryListView, IndustrySelectionView,
+    ProfileViewSet, RoleListView, RoleSelectionView, IndustryListView, IndustrySelectionView,
     PrimaryIndustrySelectionView, SkillListView, SkillSelectionView,
-    PrimarySkillSelectionView, ProfileCreateView, ProfileDetailView,
+    PrimarySkillSelectionView,
     ExperienceViewSet, EducationViewSet
 )
 
@@ -15,16 +15,20 @@ urlpatterns = [
     # Industry endpoints
     path('profile/get-industries/', IndustryListView.as_view({'get': 'list'}), name='industry-list'),
     path('profile/select-industries/', IndustrySelectionView.as_view({'post': 'create'}), name='industry-select'),
+    path('profile/select-industries/<int:user_id>/', IndustrySelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='industry-edit-delete'),
     path('profile/primary-industry/', PrimaryIndustrySelectionView.as_view({'post': 'create'}), name='primary-industry-select'),
-
+    path('profile/primary-industry/<int:user_id>/', PrimaryIndustrySelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='primary-industry-edit-delete'),
+      
     # Skill endpoints
     path('profile/get-skills/', SkillListView.as_view({'get': 'list'}), name='skill-list'),
     path('profile/select-skills/', SkillSelectionView.as_view({'post': 'create'}), name='skill-select'),
+    path('profile/select-skills/<int:user_id>/', SkillSelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='skill-edit-delete'),
     path('profile/primary-skill/', PrimarySkillSelectionView.as_view({'post': 'create'}), name='primary-skill-select'),
+    path('profile/primary-skill/<int:user_id>/', PrimarySkillSelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='primary-skill-edit-delete'),
 
-    # Profile creation and detail
-    path('profile/create/', ProfileCreateView.as_view({'post': 'create'}), name='profile-create'),
-    path('profile/<int:user_id>/', ProfileDetailView.as_view({'get': 'retrieve'}), name='profile-detail'),
+    # Profile create, edit and detail
+    path('profile/create/', ProfileViewSet.as_view({'post': 'create'}), name='profile-create'),
+    path('profile/<int:user_id>/', ProfileViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile-detail-edit'),
 
     # Experience endpoints
     path('profile/experience/', ExperienceViewSet.as_view({'post': 'create'}), name='experience-add'),

@@ -99,6 +99,39 @@ class IndustrySelectionView(viewsets.ViewSet):
 
         return Response({"status": "success", "message": "Industries selected successfully", "data": {"selected_industries": industry_ids}}, status=status.HTTP_200_OK)
 
+    def update(self, request, user_id=None):
+        industry_ids = request.data.get('industry_ids', [])
+
+        if not user_id or not industry_ids:
+            return Response({"error": "user_id and industry_ids are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        industries = Industry.objects.filter(id__in=industry_ids)
+        if industries.count() != len(industry_ids):
+            return Response({"error": "Some industries are invalid."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.selected_industries.set(industries)
+        profile.save()
+
+        return Response({"status": "success", "message": "Industries updated successfully", "data": {"selected_industries": industry_ids}}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, user_id=None):
+        if not user_id:
+            return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.selected_industries.clear()
+        profile.save()
+
+        return Response({"status": "success", "message": "Industries removed successfully"}, status=status.HTTP_200_OK)
+
+
 class PrimaryIndustrySelectionView(viewsets.ViewSet):
     def create(self, request):
         user_id = request.data.get('user_id')
@@ -119,6 +152,38 @@ class PrimaryIndustrySelectionView(viewsets.ViewSet):
         profile.save()
 
         return Response({"status": "success", "message": "Primary industry selected successfully", "data": {"primary_industry": primary_industry.name}}, status=status.HTTP_200_OK)
+
+    def update(self, request, user_id=None):
+        primary_industry_id = request.data.get('primary_industry_id')
+
+        if not user_id or not primary_industry_id:
+            return Response({"error": "user_id and primary_industry_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        primary_industry = Industry.objects.filter(id=primary_industry_id).first()
+        if not primary_industry or primary_industry not in profile.selected_industries.all():
+            return Response({"error": "Primary industry must be chosen from selected industries."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.selected_primary_industry = primary_industry
+        profile.save()
+
+        return Response({"status": "success", "message": "Primary industry updated successfully", "data": {"primary_industry": primary_industry.name}}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, user_id=None):
+        if not user_id:
+            return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.selected_primary_industry = None
+        profile.save()
+
+        return Response({"status": "success", "message": "Primary industry removed successfully"}, status=status.HTTP_200_OK)
 
 class SkillListView(viewsets.ViewSet):
     def list(self, request):
@@ -150,6 +215,38 @@ class SkillSelectionView(viewsets.ViewSet):
 
         return Response({"status": "success", "message": "Skills selected successfully", "data": {"selected_skills": skill_ids}}, status=status.HTTP_200_OK)
 
+    def update(self, request, user_id=None):
+        skill_ids = request.data.get('skill_ids', [])
+
+        if not user_id or not skill_ids:
+            return Response({"error": "user_id and skill_ids are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        skills = Skill.objects.filter(id__in=skill_ids)
+        if skills.count() != len(skill_ids):
+            return Response({"error": "Some skills are invalid."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.selected_skills.set(skills)
+        profile.save()
+
+        return Response({"status": "success", "message": "Skills updated successfully", "data": {"selected_skills": skill_ids}}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, user_id=None):
+        if not user_id:
+            return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.selected_skills.clear()
+        profile.save()
+
+        return Response({"status": "success", "message": "Skills removed successfully"}, status=status.HTTP_200_OK)
+
 class PrimarySkillSelectionView(viewsets.ViewSet):
     def create(self, request):
         user_id = request.data.get('user_id')
@@ -171,21 +268,51 @@ class PrimarySkillSelectionView(viewsets.ViewSet):
 
         return Response({"status": "success", "message": "Primary skill selected successfully", "data": {"primary_skill": primary_skill.name}}, status=status.HTTP_200_OK)
 
-class ProfileCreateView(viewsets.ViewSet):
+    def update(self, request, user_id=None):
+        primary_skill_id = request.data.get('primary_skill_id')
+
+        if not user_id or not primary_skill_id:
+            return Response({"error": "user_id and primary_skill_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        primary_skill = Skill.objects.filter(id=primary_skill_id).first()
+        if not primary_skill or primary_skill not in profile.selected_skills.all():
+            return Response({"error": "Primary skill must be chosen from selected skills."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.selected_primary_skill = primary_skill
+        profile.save()
+
+        return Response({"status": "success", "message": "Primary skill updated successfully", "data": {"primary_skill": primary_skill.name}}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, user_id=None):
+        if not user_id:
+            return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.selected_primary_skill = None
+        profile.save()
+
+        return Response({"status": "success", "message": "Primary skill removed successfully"}, status=status.HTTP_200_OK)
+
+class ProfileViewSet(viewsets.ViewSet):
     def create(self, request):
         user_id = request.data.get('user_id')
         
-        # Check if user_id is provided
         if not user_id:
             return Response({"status": "error", "message": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch the profile or return an error if not found
         profile = get_profile(user_id)
         if not profile:
             return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
         data = {
-            "user_type": request.data.get('user_type', profile.user_type or "2"),  # Default to "2" (Regular User)
+            "user_type": request.data.get('user_type', profile.user_type or "2"),
             "bio": request.data.get('bio', profile.bio),
             "cover_image": request.data.get('cover_image', profile.cover_image),
             "profile_image": request.data.get('profile_image', profile.profile_image),
@@ -196,24 +323,21 @@ class ProfileCreateView(viewsets.ViewSet):
             "weight": request.data.get('weight', profile.weight),
         }
 
-        # Only update fields if they are valid, use serializer for validation
         serializer = ProfileCreateSerializer(profile, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response({
                 "status": "success",
-                "message": "Profile updated successfully",
+                "message": "Profile created successfully",
                 "data": serializer.data
-            }, status=status.HTTP_200_OK)
+            }, status=status.HTTP_201_CREATED)
         
-        # If validation fails, return the specific errors
         return Response({
             "status": "error",
-            "message": "Profile update failed due to invalid data.",
+            "message": "Profile creation failed due to invalid data.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
-class ProfileDetailView(viewsets.ViewSet):
     def retrieve(self, request, user_id=None):
         profile = get_profile(user_id)
         
@@ -226,6 +350,28 @@ class ProfileDetailView(viewsets.ViewSet):
             "message": "Profile details retrieved successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, user_id=None):
+        profile = get_profile(user_id)
+        
+        if not profile:
+            return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProfileCreateSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "Profile updated successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            "status": "error",
+            "message": "Profile update failed due to invalid data.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ExperienceViewSet(viewsets.ViewSet):
     def list(self, request, user_id=None):
