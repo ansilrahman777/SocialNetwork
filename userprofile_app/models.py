@@ -55,8 +55,7 @@ class Profile(models.Model):
         ('2', 'Regular User'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    mobile_or_email = models.CharField(max_length=255)
-    user_type = models.CharField(max_length=1, choices=USER_TYPE_CHOICES)
+    user_type = models.CharField(max_length=1, choices=USER_TYPE_CHOICES, default='2') 
     selected_role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     selected_industries = models.ManyToManyField(Industry, blank=True)
     selected_primary_industry = models.ForeignKey(Industry, related_name='primary_industry', on_delete=models.SET_NULL, null=True, blank=True)

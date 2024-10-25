@@ -1,12 +1,13 @@
-# serializers.py
 from rest_framework import serializers
 from .models import Profile, Role, Industry, Skill, Experience, Education
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ['id', 'role_name', 'description']
-        read_only_fields = ['id']  
+        read_only_fields = ['id']
 
 class IndustrySerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,7 +16,7 @@ class IndustrySerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class SkillSerializer(serializers.ModelSerializer):
-    industry = IndustrySerializer(read_only=True)  
+    industry = IndustrySerializer(read_only=True)
 
     class Meta:
         model = Skill
@@ -23,54 +24,104 @@ class SkillSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class ExperienceSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)  
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Allow writing user
+    start_date = serializers.DateField()
+    end_date = serializers.DateField(required=False)
 
     class Meta:
         model = Experience
         fields = ['id', 'user', 'job_title', 'company_name', 'work_type', 'start_date', 'end_date', 'is_current']
-        read_only_fields = ['id']  
+        read_only_fields = ['id']
+
+    def validate(self, data):
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if end_date and start_date and end_date < start_date:
+            raise serializers.ValidationError("End date must be after the start date.")
+        
+        return data
 
 class EducationSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)  
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Allow writing user
+    start_date = serializers.DateField()
+    end_date = serializers.DateField(required=False)
 
     class Meta:
         model = Education
         fields = ['id', 'user', 'degree', 'field_of_study', 'institution_name', 'start_date', 'end_date', 'is_current']
-        read_only_fields = ['id']  
+        read_only_fields = ['id']
 
+    def validate(self, data):
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if end_date and start_date and end_date < start_date:
+            raise serializers.ValidationError("End date must be after the start date.")
+        
+        return data
+
+# Profile Create Serializer with Validation
 class ProfileCreateSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)  
-    selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), write_only=True)  
-    selected_primary_industry = serializers.PrimaryKeyRelatedField(queryset=Industry.objects.all(), write_only=True, allow_null=True)  
-    selected_primary_skill = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), write_only=True, allow_null=True)  
+    username = serializers.CharField(source='user.username', read_only=True)
+    mobile_or_email = serializers.CharField(source='user.mobile_or_email', read_only=True)
+    user_type = serializers.ChoiceField(choices=[('1', 'Admin'), ('2', 'Regular User')], default="2")
+    selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), required=True)
+    selected_primary_industry = serializers.PrimaryKeyRelatedField(queryset=Industry.objects.all(), required=False, allow_null=True)
+    selected_primary_skill = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = Profile
         fields = [
-            'id', 'user', 'mobile_or_email', 'user_type', 'selected_role', 'selected_primary_industry', 
-            'selected_primary_skill', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 
-            'age', 'location', 'height', 'weight'
+            'id', 'username', 'mobile_or_email', 'user_type', 'selected_role', 'selected_primary_industry',
+            'selected_primary_skill', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age',
+            'location', 'height', 'weight'
         ]
-        read_only_fields = ['id', 'user'] 
+        read_only_fields = ['id', 'user']
 
+    def validate_age(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Age must be a positive number.")
+        return value
+
+    def validate_height(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Height must be a positive number.")
+        return value
+
+    def validate_weight(self, value):
+        if not value.endswith('kg') and not value.endswith('lbs'):
+            raise serializers.ValidationError("Weight must be in 'kg' or 'lbs'.")
+        return value
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['username'] = instance.user.username
+        representation['mobile_or_email'] = instance.user.mobile_or_email
+        representation['user_type'] = instance.get_user_type_display()  
+        return representation
+
+# Profile Role Serializer
 class ProfileRoleSerializer(serializers.ModelSerializer):
-    selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), write_only=True) 
+    selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), required=True)
 
     class Meta:
         model = Profile
         fields = ['user', 'mobile_or_email', 'selected_role']
-        read_only_fields = ['user', 'mobile_or_email']  
+        read_only_fields = ['user', 'mobile_or_email']
 
+# Profile Primary Industry Serializer
 class ProfilePrimaryIndustrySerializer(serializers.ModelSerializer):
-    selected_primary_industry = serializers.PrimaryKeyRelatedField(queryset=Industry.objects.all(), write_only=True)
+    selected_primary_industry = serializers.PrimaryKeyRelatedField(queryset=Industry.objects.all(), required=True)
 
     class Meta:
         model = Profile
         fields = ['user', 'mobile_or_email', 'selected_primary_industry']
         read_only_fields = ['user', 'mobile_or_email']
 
+# Profile Primary Skill Serializer
 class ProfilePrimarySkillSerializer(serializers.ModelSerializer):
-    selected_primary_skill = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), write_only=True)
+    selected_primary_skill = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), required=True)
 
     class Meta:
         model = Profile
