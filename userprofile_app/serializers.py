@@ -1,6 +1,6 @@
 import datetime
 from rest_framework import serializers
-from .models import Profile, Role, Industry, Skill, Experience, Education, AadharVerification, PassportVerification, DLVerification
+from .models import DocumentUpload, Profile, Role, Industry, Skill, Experience, Education, AadharVerification, PassportVerification, DLVerification
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -167,3 +167,18 @@ class DLVerificationSerializer(serializers.ModelSerializer):
         if len(value) < 6:
             raise serializers.ValidationError("Driver's License number must be at least 6 characters.")
         return value
+
+
+class DocumentUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentUpload
+        fields = ['user', 'file', 'upload_status', 'verify_status']
+        read_only_fields = ['upload_status', 'verify_status']
+
+    def validate_file(self, value):
+        allowed_formats = ['jpg', 'jpeg', 'png', 'pdf']
+        extension = value.name.split('.')[-1].lower()
+        if extension not in allowed_formats:
+            raise serializers.ValidationError("File must be in JPG, PNG, or PDF format.")
+        return value
+

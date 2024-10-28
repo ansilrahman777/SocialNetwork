@@ -3,7 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from .models import Profile, Role, Industry, Skill, Experience, Education
-from .serializers import AadharVerificationSerializer, DLVerificationSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
+from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
 
 User = get_user_model()
 
@@ -562,5 +562,39 @@ class DocumentVerificationViewSet(viewsets.ViewSet):
         return Response({
             "status": "error",
             "message": "Driver's License verification failed",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class DocumentUploadView(viewsets.ViewSet):
+    # permission_classes = [IsAuthenticated]
+
+    def create(self, request):
+        user = request.user
+        file = request.FILES.get('file')
+
+        if not file:
+            return Response({"error": "File is required."},status=status.HTTP_400_BAD_REQUEST)
+
+        data = {
+            "user": user.id,
+            "file": file
+        }
+        serializer = DocumentUploadSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "File uploaded successfully",
+                "data": {
+                    "status": "Document pending",
+                    "file_url": serializer.instance.file.url,
+                    "verify_status": 1
+                }
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            "status": "error",
+            "message": "File upload failed",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)

@@ -109,5 +109,15 @@ class DLVerification(models.Model):
 
     def __str__(self):
         return f"DL Verification for {self.user}"
+    
+class DocumentUpload(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    file = models.FileField(upload_to='uploads/documents/')
+    upload_status = models.CharField(max_length=50, default="Document pending")
+    verify_status = models.IntegerField(default=1)  # 1 = Pending, 2 = Verified, etc.
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Document uploaded by {self.user.mobile_or_email}"
 
 
