@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'crea_app',
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework.authtoken',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'storages',
     'b2sdk',
@@ -123,6 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',

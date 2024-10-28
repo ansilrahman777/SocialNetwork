@@ -1,33 +1,25 @@
-# views.py
-
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.utils import timezone
-from .models import CustomUser, OTPVerification, UserSession
-from .serializers import UserSerializer,RegisterSerializer, OTPSerializer
-from django.core.mail import send_mail
-from .serializers import RegisterSerializer
-from drf_yasg.utils import swagger_auto_schema
-import random
-from rest_framework import generics
-from .models import PasswordResetRequest
-from .serializers import ResetPasswordSerializer, ChangePasswordSerializer
-from django.contrib.auth import get_user_model
-from .models import CustomUser
-from django.conf import settings
-from rest_framework import status
-from rest_framework.views import APIView
-from .models import OnboardingImage
-from .serializers import OnboardingImageSerializer
-from .backblaze_storage import upload_to_backblaze 
-from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import authenticate
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.utils import timezone
+from django.conf import settings
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+import random
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+from .serializers import LogoutSerializer, UserSerializer, RegisterSerializer, OTPSerializer, ResetPasswordSerializer, ChangePasswordSerializer, OnboardingImageSerializer
+from .models import CustomUser, OTPVerification, UserSession, OnboardingImage, PasswordResetRequest
+from .backblaze_storage import upload_to_backblaze
+from drf_yasg.utils import swagger_auto_schema
+from django.contrib.auth.hashers import check_password
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
+
+CustomUser = get_user_model()
 
 
 
@@ -419,45 +411,113 @@ class ResetPasswordView(generics.GenericAPIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
 class ChangePasswordView(generics.GenericAPIView):
-    permission_classes = [AllowAny]  # Ensure this is defined correctly
+    authentication_classes = [JWTAuthentication]  # Enforce JWT-based authentication
+    permission_classes = [IsAuthenticated]        # Ensure only authenticated users can access
     serializer_class = ChangePasswordSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        
         if serializer.is_valid():
-            mobile_or_email = serializer.validated_data['mobile_or_email']
+            current_password = serializer.validated_data['current_password']
             new_password = serializer.validated_data['new_password']
+            confirm_password = serializer.validated_data['confirm_password']
 
-            try:
-                # Find user by mobile or email
-                user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
-                user.set_password(new_password)  # Set the new password
-                user.save()
+            user = request.user  # Get the authenticated user
 
-                return Response({
-                    "status": {
-                        "type": "success",
-                        "message": "Password Reset Successfully",
-                        "code": 200,
-                        "error": False
-                    },
-                    "data": [{
-                        "status": "Password Changed",
-                        "user": {
-                            "user_id": user.id,
-                        },
-                    }]
-                }, status=status.HTTP_200_OK)
-
-            except CustomUser.DoesNotExist:
+            # Check if the current password is correct
+            if not check_password(current_password, user.password):
                 return Response({
                     "status": {
                         "type": "error",
-                        "message": "User not found",
-                        "code": 404,
+                        "message": "Current password is incorrect",
+                        "code": 400,
                         "error": True
                     }
-                }, status=status.HTTP_404_NOT_FOUND)
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Ensure new password matches confirm password
+            if new_password != confirm_password:
+                return Response({
+                    "status": {
+                        "type": "error",
+                        "message": "New password and confirm password do not match",
+                        "code": 400,
+                        "error": True
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Set the new password and save the user
+            user.set_password(new_password)
+            user.save()
+
+            return Response({
+                "status": {
+                    "type": "success",
+                    "message": "Password changed successfully",
+                    "code": 200,
+                    "error": False
+                },
+                "data": {
+                    "user": {
+                        "user_id": user.id,
+                        "status": "Password changed"
+                    }
+                }
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            "status": {
+                "type": "error",
+                "message": "Invalid input",
+                "code": 400,
+                "error": True,
+                "errors": serializer.errors
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = LogoutSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        refresh_token = serializer.validated_data['refresh_token']
+
+        try:
+            # Blacklist the refresh token
+            outstanding_token = OutstandingToken.objects.get(token=refresh_token)
+            BlacklistedToken.objects.create(token=outstanding_token)
+
+            return Response({
+                "status": {
+                    "type": "success",
+                    "message": "Successfully logged out",
+                    "code": 200,
+                    "error": False
+                }
+            }, status=status.HTTP_205_RESET_CONTENT)
+
+        except OutstandingToken.DoesNotExist:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "Token not found or already blacklisted",
+                    "code": 400,
+                    "error": True
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": str(e),
+                    "code": 400,
+                    "error": True
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
