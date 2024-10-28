@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ProfileViewSet, RoleListView, RoleSelectionView, IndustryListView, IndustrySelectionView,
+    DocumentVerificationViewSet, ProfileViewSet, RoleListView, RoleSelectionView, IndustryListView, IndustrySelectionView,
     PrimaryIndustrySelectionView, SkillListView, SkillSelectionView,
     PrimarySkillSelectionView,
     ExperienceViewSet, EducationViewSet
@@ -39,4 +39,9 @@ urlpatterns = [
     path('profile/education/', EducationViewSet.as_view({'post': 'create'}), name='education-add'),
     path('profile/<int:user_id>/education/', EducationViewSet.as_view({'get': 'list'}), name='user-education'),
     path('profile/education/<int:pk>/', EducationViewSet.as_view({'patch': 'update', 'delete': 'destroy'}), name='education-detail'),
+    
+    # Document verification 
+    path('profile/docverifyaadhar/', DocumentVerificationViewSet.as_view({'post': 'verify_aadhar'}), name='doc-verify-aadhar'),
+    path('profile/docverifypassport/', DocumentVerificationViewSet.as_view({'post': 'verify_passport'}), name='doc-verify-passport'),
+    path('profile/docverifydl/', DocumentVerificationViewSet.as_view({'post': 'verify_dl'}), name='doc-verify-dl'),
 ]

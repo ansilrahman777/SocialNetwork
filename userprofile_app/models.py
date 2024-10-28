@@ -72,4 +72,42 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.mobile_or_email}"
+    
+
+class AadharVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    aadhar_cn = models.CharField(max_length=12)
+    aadhar_fname = models.CharField(max_length=100)
+    mobile_or_email = models.EmailField()
+    status = models.CharField(max_length=20, default="Document pending")
+    verify_status = models.CharField(max_length=2, default="1")
+
+    def __str__(self):
+        return f"Aadhar Verification for {self.user}"
+
+class PassportVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    ps_cn = models.CharField(max_length=15)
+    ps_fname = models.CharField(max_length=100)
+    ps_isscountry = models.CharField(max_length=100)
+    ps_dateexp = models.DateField()
+    mobile_or_email = models.EmailField()
+    status = models.CharField(max_length=20, default="Document pending")
+    verify_status = models.CharField(max_length=2, default="2")
+
+    def __str__(self):
+        return f"Passport Verification for {self.user}"
+
+class DLVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    dl_ln = models.CharField(max_length=20)
+    dl_fname = models.CharField(max_length=100)
+    dl_isscstate = models.CharField(max_length=100)
+    mobile_or_email = models.EmailField()
+    status = models.CharField(max_length=20, default="Verification Completed")
+    verify_status = models.CharField(max_length=2, default="3")
+
+    def __str__(self):
+        return f"DL Verification for {self.user}"
+
 

@@ -1,5 +1,6 @@
+import datetime
 from rest_framework import serializers
-from .models import Profile, Role, Industry, Skill, Experience, Education
+from .models import Profile, Role, Industry, Skill, Experience, Education, AadharVerification, PassportVerification, DLVerification
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -127,3 +128,42 @@ class ProfilePrimarySkillSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['user', 'mobile_or_email', 'selected_primary_skill']
         read_only_fields = ['user', 'mobile_or_email']
+        
+
+class AadharVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AadharVerification
+        fields = ['user', 'mobile_or_email', 'aadhar_cn', 'aadhar_fname', 'status', 'verify_status']
+        read_only_fields = ['status', 'verify_status']
+
+    def validate_aadhar_cn(self, value):
+        if len(value) != 12 or not value.isdigit():
+            raise serializers.ValidationError("Aadhar number must be exactly 12 digits.")
+        return value
+
+class PassportVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PassportVerification
+        fields = ['user', 'mobile_or_email', 'ps_cn', 'ps_fname', 'ps_isscountry', 'ps_dateexp', 'status', 'verify_status']
+        read_only_fields = ['status', 'verify_status']
+
+    def validate_ps_cn(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Passport number must be at least 8 characters.")
+        return value
+
+    def validate_ps_dateexp(self, value):
+        if value <= datetime.date.today():
+            raise serializers.ValidationError("Passport expiry date must be in the future.")
+        return value
+
+class DLVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DLVerification
+        fields = ['user', 'mobile_or_email', 'dl_ln', 'dl_fname', 'dl_isscstate', 'status', 'verify_status']
+        read_only_fields = ['status', 'verify_status']
+
+    def validate_dl_ln(self, value):
+        if len(value) < 6:
+            raise serializers.ValidationError("Driver's License number must be at least 6 characters.")
+        return value

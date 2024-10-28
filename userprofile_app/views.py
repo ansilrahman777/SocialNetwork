@@ -3,7 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from .models import Profile, Role, Industry, Skill, Experience, Education
-from .serializers import ExperienceSerializer, EducationSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
+from .serializers import AadharVerificationSerializer, DLVerificationSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
 
 User = get_user_model()
 
@@ -516,3 +516,51 @@ class EducationViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
         except Education.DoesNotExist:
             return Response({"error": "Education record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class DocumentVerificationViewSet(viewsets.ViewSet):
+
+    def verify_aadhar(self, request):
+        serializer = AadharVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "Aadhar Update Successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "status": "error",
+            "message": "Aadhar verification failed",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def verify_passport(self, request):
+        serializer = PassportVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "Passport Update Successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "status": "error",
+            "message": "Passport verification failed",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def verify_dl(self, request):
+        serializer = DLVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "Driver's License Update Successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "status": "error",
+            "message": "Driver's License verification failed",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
