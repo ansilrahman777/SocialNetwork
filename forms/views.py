@@ -14,12 +14,15 @@ from drf_yasg.utils import swagger_auto_schema
 from .models import EventRegistration, Internship, Apprenticeship
 from rest_framework.authentication import TokenAuthentication
 from .serializers import EventRegistrationSerializer,InternshipSerializer,ApprenticeshipSerializer
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 
 CustomUser = get_user_model()
 
 class GigWorkFormView(APIView):
+    permission_classes = [IsAuthenticated]  
+    authentication_classes = [JWTAuthentication]
     def post(self, request):
         # Pass the request context to the serializer
         serializer = GigWorkSerializer(data=request.data, context={'request': request})
@@ -85,6 +88,8 @@ class GigWorkFormView(APIView):
 
     
 class CastingCallFormView(APIView):
+    permission_classes = [IsAuthenticated]  
+    authentication_classes = [JWTAuthentication]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request):
@@ -151,6 +156,8 @@ class CastingCallFormView(APIView):
 
 
 class ProjectFormView(APIView):
+    permission_classes = [IsAuthenticated]  
+    authentication_classes = [JWTAuthentication]
     def post(self, request):
         serializer = ProjectSerializer(data=request.data, context={'request': request})  # Pass request context
         if serializer.is_valid():
@@ -216,8 +223,8 @@ class ProjectFormView(APIView):
 class PostFeedView(generics.CreateAPIView):
     queryset = PostFeed.objects.all()
     serializer_class = PostFeedSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]  # Ensure TokenAuthentication is used
+    permission_classes = [IsAuthenticated]  
+    authentication_classes = [JWTAuthentication] # Ensure TokenAuthentication is used
     parser_classes = [MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
@@ -283,8 +290,8 @@ class PostFeedView(generics.CreateAPIView):
 # Internship View
 # ----------------------------
 class InternshipCreateView(APIView):
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAuthenticated]  
+    authentication_classes = [JWTAuthentication]
     @swagger_auto_schema(request_body=InternshipSerializer)
     def post(self, request):
         serializer = InternshipSerializer(data=request.data, context={'request': request})
@@ -351,15 +358,10 @@ class InternshipCreateView(APIView):
 # Event Registration View
 # ----------------------------
 
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_yasg.utils import swagger_auto_schema
 
 class EventRegistrationCreateView(APIView):
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAuthenticated]  
+    authentication_classes = [JWTAuthentication]
     @swagger_auto_schema(request_body=EventRegistrationSerializer)
     def post(self, request):
         serializer = EventRegistrationSerializer(data=request.data, context={'request': request})
@@ -424,8 +426,8 @@ class EventRegistrationCreateView(APIView):
 # Apprenticeship View
 # ----------------------------
 class ApprenticeshipCreateView(APIView):
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAuthenticated]  
+    authentication_classes = [JWTAuthentication]
     @swagger_auto_schema(request_body=ApprenticeshipSerializer)
     def post(self, request):
         serializer = ApprenticeshipSerializer(data=request.data, context={'request': request})

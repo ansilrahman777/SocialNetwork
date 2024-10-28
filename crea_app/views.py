@@ -26,6 +26,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 
 
@@ -221,18 +223,24 @@ class RegisterView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
+
     @swagger_auto_schema(request_body=UserSerializer)
     def post(self, request):
         mobile_or_email = request.data.get('mobile_or_email')
         password = request.data.get('password')
 
         try:
+            # Retrieve user by mobile/email
             user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
+
+            # Check password
             if user.check_password(password):
-                # Generate or retrieve the token
-                token, created = Token.objects.get_or_create(user=user)
+                # Generate access and refresh tokens
+                refresh = RefreshToken.for_user(user)
 
                 return Response({
                     "status": {
@@ -249,13 +257,23 @@ class LoginView(APIView):
                             "user_status": user.user_status,
                             "login_method": "1",
                         },
-                        "token": token.key,  # Token returned here
+                        "tokens": {
+                            "refresh": str(refresh),
+                            "access": str(refresh.access_token),
+                        }
                     }]
                 }, status=status.HTTP_200_OK)
             else:
-                return Response({"error": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({
+                    "status": "error", 
+                    "message": "Invalid password"
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
         except CustomUser.DoesNotExist:
-            return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "status": "error", 
+                "message": "User does not exist"
+            }, status=status.HTTP_404_NOT_FOUND)
 
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
