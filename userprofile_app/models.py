@@ -69,9 +69,18 @@ class Profile(models.Model):
     location = models.CharField(max_length=255, null=True, blank=True)
     height = models.FloatField(null=True, blank=True)
     weight = models.CharField(max_length=10, null=True, blank=True)
+    view_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"Profile of {self.user.mobile_or_email}"
+
+class ProfileView(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='profile_views')
+    viewer = models.ForeignKey(User, on_delete=models.CASCADE)
+    time_viewed = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('profile', 'viewer')
     
 
 class AadharVerification(models.Model):

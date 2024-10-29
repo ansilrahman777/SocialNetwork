@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from .models import Profile, Role, Industry, Skill, Experience, Education
+from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Education
 from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
 
 User = get_user_model()
@@ -302,6 +302,7 @@ class PrimarySkillSelectionView(viewsets.ViewSet):
 
 class ProfileViewSet(viewsets.ViewSet):
     def create(self, request):
+        # permission_classes = [IsAuthenticated]
         user_id = request.data.get('user_id')
         
         if not user_id:
@@ -343,6 +344,14 @@ class ProfileViewSet(viewsets.ViewSet):
         
         if not profile:
             return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        viewer = request.user
+        if viewer.is_authenticated and viewer.id != profile.user.id:
+            # Check if the viewer has already viewed the profile
+            if not ProfileView.objects.filter(profile=profile, viewer=viewer).exists():
+                ProfileView.objects.create(profile=profile, viewer=viewer)
+                profile.view_count += 1
+                profile.save()
 
         serializer = ProfileCreateSerializer(profile)
         return Response({

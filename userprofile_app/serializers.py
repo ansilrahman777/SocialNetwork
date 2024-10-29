@@ -76,9 +76,9 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'mobile_or_email', 'user_type', 'selected_role', 'selected_primary_industry',
             'selected_primary_skill', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age',
-            'location', 'height', 'weight'
+            'location', 'height', 'weight', 'view_count'
         ]
-        read_only_fields = ['id', 'user']
+        read_only_fields = ['id', 'user', 'view_count']
 
     def validate_age(self, value):
         if value < 0:
@@ -94,14 +94,6 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
         if not value.endswith('kg') and not value.endswith('lbs'):
             raise serializers.ValidationError("Weight must be in 'kg' or 'lbs'.")
         return value
-    
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['username'] = instance.user.username
-        representation['mobile_or_email'] = instance.user.mobile_or_email
-        representation['user_type'] = instance.get_user_type_display()  
-        return representation
-
 # Profile Role Serializer
 class ProfileRoleSerializer(serializers.ModelSerializer):
     selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), required=True)
