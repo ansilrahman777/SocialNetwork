@@ -198,3 +198,45 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+
+import os
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import auth
+from firebase_admin.exceptions import FirebaseError
+
+# Load Firebase service account key
+# Since serviceAccountKey.json is in the same directory as this script, we can get the current directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This should point to the crea directory
+cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")
+
+# Check if the credential file exists
+if not os.path.exists(cred_path):
+    raise FileNotFoundError(f"The service account key file does not exist at the path: {cred_path}")
+
+# Initialize Firebase
+try:
+    cred = credentials.Certificate(cred_path)
+    firebase_app = firebase_admin.initialize_app(cred)
+    print("Firebase initialized successfully.")
+except FirebaseError as e:
+    print(f"Error initializing Firebase: {e}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+
+def verify_google_token(google_token):
+    try:
+        decoded_token = auth.verify_id_token(google_token)
+        return decoded_token  # Contains user info
+    except auth.InvalidIdTokenError:
+        return {"status": "error", "message": "Invalid Google token."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Example usage:
+if __name__ == "__main__":
+    # Replace 'your_google_token' with an actual token for testing
+    google_token = 'your_google_token'
+    verification_result = verify_google_token(google_token)
+    print(verification_result)

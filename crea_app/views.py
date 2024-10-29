@@ -17,6 +17,8 @@ from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+from firebase_admin import auth as firebase_auth
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 CustomUser = get_user_model()
@@ -216,56 +218,143 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(request_body=UserSerializer)
     def post(self, request):
+        # Get the login method and tokens
+        login_method = request.data.get('login_method')  # "1" for traditional, "2" for Google, "3" for Apple
         mobile_or_email = request.data.get('mobile_or_email')
         password = request.data.get('password')
+        google_token = request.data.get('google_token')
+        apple_token = request.data.get('apple_token')
+
+        # Validate input
+        if login_method not in ["1", "2", "3"]:
+            return Response({
+                "status": "error",
+                "message": "Invalid login method"
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Retrieve user by mobile/email
+            # Handle traditional login (email/password)
+            if login_method == "1":
+                return self.handle_traditional_login(mobile_or_email, password)
+
+            # Handle Google login
+            elif login_method == "2":
+                return self.handle_google_login(google_token)
+
+            # Handle Apple login
+            elif login_method == "3":
+                return self.handle_apple_login(apple_token)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def handle_traditional_login(self, mobile_or_email, password):
+        try:
             user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
 
-            # Check password
             if user.check_password(password):
-                # Generate access and refresh tokens
                 refresh = RefreshToken.for_user(user)
-
-                return Response({
-                    "status": {
-                        "type": "success",
-                        "message": "Logged in Successfully",
-                        "code": 200,
-                        "error": False
-                    },
-                    "data": [{
-                        "status": "Authenticated",
-                        "user": {
-                            "email": user.mobile_or_email,
-                            "user_id": user.id,
-                            "user_status": user.user_status,
-                            "login_method": "1",
-                        },
-                        "tokens": {
-                            "refresh": str(refresh),
-                            "access": str(refresh.access_token),
-                        }
-                    }]
-                }, status=status.HTTP_200_OK)
+                return self.generate_response(user, refresh, "1")  # Pass "1" for traditional login
             else:
                 return Response({
-                    "status": "error", 
+                    "status": "error",
                     "message": "Invalid password"
                 }, status=status.HTTP_401_UNAUTHORIZED)
 
         except CustomUser.DoesNotExist:
             return Response({
-                "status": "error", 
+                "status": "error",
                 "message": "User does not exist"
             }, status=status.HTTP_404_NOT_FOUND)
+
+    def handle_google_login(self, google_token):
+        if not google_token:
+            return Response({
+                "status": "error",
+                "message": "Google token must not be empty."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            decoded_token = firebase_auth.verify_id_token(google_token)
+            email = decoded_token.get('email')
+
+            user, _ = CustomUser.objects.get_or_create(
+                mobile_or_email=email,
+                defaults={"user_status": "active"}
+            )
+            refresh = RefreshToken.for_user(user)
+            return self.generate_response(user, refresh, "2")  # Pass "2" for Google login
+
+        except firebase_auth.InvalidIdTokenError:
+            return Response({
+                "status": "error",
+                "message": "Invalid Google token."
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def handle_apple_login(self, apple_token):
+        if not apple_token:
+            return Response({
+                "status": "error",
+                "message": "Apple token must not be empty."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            decoded_token = firebase_auth.verify_id_token(apple_token)
+            email = decoded_token.get('email')
+
+            user, _ = CustomUser.objects.get_or_create(
+                mobile_or_email=email,
+                defaults={"user_status": "active"}
+            )
+            refresh = RefreshToken.for_user(user)
+            return self.generate_response(user, refresh, "3")  # Pass "3" for Apple login
+
+        except firebase_auth.InvalidIdTokenError:
+            return Response({
+                "status": "error",
+                "message": "Invalid Apple token."
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Helper function to generate the response with tokens
+    def generate_response(self, user, refresh, login_method):
+        return Response({
+            "status": {
+                "type": "success",
+                "message": "Logged in successfully",
+                "code": 200,
+                "error": False
+            },
+            "data": [{
+                "status": "Authenticated",
+                "user": {
+                    "email": user.mobile_or_email,
+                    "user_id": user.id,
+                    "user_status": user.user_status,
+                    "login_method": login_method,
+                },
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                }
+            }]
+        }, status=status.HTTP_200_OK)
 
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
