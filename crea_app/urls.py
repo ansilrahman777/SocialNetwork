@@ -18,4 +18,5 @@ urlpatterns = [
     path('resendotp/', ResendOTPView.as_view(), name='resend_otp'),
     path('profile/resetpassword/', ResetPasswordView.as_view(), name='reset-password'),
     path('profile/changepassword/', ChangePasswordView.as_view(), name='change-password'),
+    
 ]

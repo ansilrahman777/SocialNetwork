@@ -272,19 +272,15 @@ class VerifyOTPView(APIView):
 
     def post(self, request):
         mobile_or_email = request.data.get('mobile_or_email')
-        otp_received = request.data.get('otp_received')
+        otp_received = request.data.get('otp')
+        action = request.data.get('action')  # This can be 'reset_password' or 'login'
 
         User = get_user_model()
-        
-        # Retrieve the user based on mobile or email
+
         try:
             user = User.objects.get(mobile_or_email=mobile_or_email)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Now use the user to find the OTPVerification
-        try:
             otp_verification = OTPVerification.objects.get(user=user, otp=otp_received)
+
             if timezone.now() > otp_verification.otp_expires_at:
                 return Response({"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -292,13 +288,25 @@ class VerifyOTPView(APIView):
             otp_verification.is_verified = True
             otp_verification.save()
 
-            # Optionally, generate a token or login user here
-            # For example, you might want to create a token for the session
+            if action == 'reset_password':
+                # Here you can return a success response for password reset
+                return Response({
+                    "status": {
+                        "type": "success",
+                        "message": "OTP verified successfully. You can now set a new password.",
+                        "code": 200,
+                        "error": False
+                    },
+                    "data": [{
+                        "status": "Verified for password reset"
+                    }]
+                }, status=status.HTTP_200_OK)
 
+            # Other actions (e.g., login) can be handled here
             return Response({
                 "status": {
                     "type": "success",
-                    "message": "Verified Successfully",
+                    "message": "OTP verified successfully. You are logged in.",
                     "code": 200,
                     "error": False
                 },
@@ -310,107 +318,109 @@ class VerifyOTPView(APIView):
 
         except OTPVerification.DoesNotExist:
             return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
-
-
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        
 class ResendOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         mobile_or_email = request.data.get('mobile_or_email')
 
+        User = get_user_model()
+
         try:
-            user = get_user_model().objects.get(mobile_or_email=mobile_or_email)
-            otp = str(random.randint(100000, 999999))  # Generate a new OTP
-            otp_verification = OTPVerification.objects.create(user=user, otp=otp)
+            user = User.objects.get(mobile_or_email=mobile_or_email)
+            # Fetch all OTPs for the user
+            otp_verifications = OTPVerification.objects.filter(user=user)
 
-            # Send new OTP via Email
-            send_mail(
-                'Your OTP Code',
-                f'Your new OTP code is {otp}. It is valid for 10 minutes.',
-                'your-email@gmail.com',  # From email
-                [user.mobile_or_email],
-                fail_silently=False,
-            )
+            if otp_verifications.exists():
+                # Choose the latest OTP that hasn't been verified or expired
+                latest_otp = otp_verifications.order_by('-otp_expires_at').first()
 
-            return Response({
-                "status": {
-                    "type": "success",
-                    "message": "OTP Sent to your Email address",
-                    "code": 200,
-                    "error": False
-                },
-                "data": [{
-                    "status": "verification pending",
-                    "otp": otp,
-                    "otpexpires_at": otp_verification.otp_expires_at
-                }]
-            }, status=status.HTTP_200_OK)
+                # If the latest OTP is not expired, resend it
+                if latest_otp and latest_otp.is_verified is False and latest_otp.otp_expires_at > timezone.now():
+                    otp = latest_otp.otp
+                else:
+                    # Generate a new OTP if the latest one is expired or verified
+                    otp = str(random.randint(100000, 999999))
+                    OTPVerification.objects.create(user=user, otp=otp)
 
-        except get_user_model().DoesNotExist:
-            return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
-
-
-class ResetPasswordView(generics.GenericAPIView):
-    permission_classes = [AllowAny]  # Ensure this is defined correctly
-    serializer_class = ResetPasswordSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            mobile_or_email = serializer.validated_data['mobile_or_email']
-            
-            try:
-                # Find user by mobile or email
-                user = CustomUser.objects.get(mobile_or_email=mobile_or_email)
-                otp = str(random.randint(100000, 999999))  # Generate OTP
-                reset_token = 'resetToken12345'  # In practice, generate a secure token
-                
-                PasswordResetRequest.objects.update_or_create(
-                    user=user,
-                    defaults={
-                        'otp': otp,
-                        'reset_token': reset_token,
-                        'otp_expires_at': timezone.now() + timezone.timedelta(minutes=10),
-                    }
-                )
-
+                # Send the OTP via email
                 send_mail(
-                    'Your Password Reset OTP',
-                    f'Your OTP is {otp}. It is valid for 10 minutes.',
-                    'your-email@example.com',
-                    [user.mobile_or_email],  # Send OTP to mobile_or_email
+                    'Your OTP Code',
+                    f'Your OTP code is {otp}. It is valid for 10 minutes.',
+                    settings.EMAIL_HOST_USER,
+                    [user.mobile_or_email],
                     fail_silently=False,
                 )
 
                 return Response({
                     "status": {
                         "type": "success",
-                        "message": "OTP Sent to your Email address or Mobile number.",
+                        "message": "OTP sent successfully to your Email address.",
                         "code": 200,
                         "error": False
-                    },
-                    "data": [{
-                        "status": "verification pending",
-                        "user": {
-                            "user_id": user.id,
-                            "otp": otp,
-                        },
-                        "otpexpires_at": PasswordResetRequest.objects.get(user=user).otp_expires_at,
-                    }]
+                    }
                 }, status=status.HTTP_200_OK)
 
-            except CustomUser.DoesNotExist:
-                return Response({
-                    "status": {
-                        "type": "error",
-                        "message": "User not found",
-                        "code": 404,
-                        "error": True
-                    }
-                }, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "No OTP entries found for this user.",
+                    "code": 404,
+                    "error": True
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({
+                "status": {
+                    "type": "error",
+                    "message": "User not found.",
+                    "code": 404,
+                    "error": True
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
 
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        mobile_or_email = request.data.get('mobile_or_email')
+        new_password = request.data.get('new_password')
+        otp_received = request.data.get('otp')
+
+        User = get_user_model()
+
+        try:
+            user = User.objects.get(mobile_or_email=mobile_or_email)
+            otp_verification = OTPVerification.objects.get(user=user, otp=otp_received)
+
+            if timezone.now() > otp_verification.otp_expires_at:
+                return Response({"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Mark the OTP as verified
+            otp_verification.is_verified = True
+            otp_verification.save()
+
+            # Set new password
+            user.set_password(new_password)
+            user.save()
+
+            return Response({
+                "status": {
+                    "type": "success",
+                    "message": "Password reset successfully",
+                    "code": 200,
+                    "error": False
+                }
+            }, status=status.HTTP_200_OK)
+
+        except OTPVerification.DoesNotExist:
+            return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class ChangePasswordView(generics.GenericAPIView):
@@ -521,3 +531,4 @@ class LogoutView(generics.GenericAPIView):
                     "error": True
                 }
             }, status=status.HTTP_400_BAD_REQUEST)
+        
