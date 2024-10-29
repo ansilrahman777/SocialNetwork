@@ -34,6 +34,9 @@ urlpatterns = [
     path('profile/experience/', ExperienceViewSet.as_view({'post': 'create'}), name='experience-add'),
     path('profile/<int:user_id>/experience/', ExperienceViewSet.as_view({'get': 'list'}), name='user-experience'),
     path('profile/experience/<int:pk>/', ExperienceViewSet.as_view({'patch': 'update', 'delete': 'destroy'}), name='experience-detail'),
+    
+    path('profile/<int:user_id>/completion-status/', ProfileViewSet.as_view({'get': 'completion_status'}), name='profile-completion-status'),
+
 
     # Education endpoints
     path('profile/education/', EducationViewSet.as_view({'post': 'create'}), name='education-add'),

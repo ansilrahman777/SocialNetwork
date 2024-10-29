@@ -70,15 +70,19 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
     selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), required=True)
     selected_primary_industry = serializers.PrimaryKeyRelatedField(queryset=Industry.objects.all(), required=False, allow_null=True)
     selected_primary_skill = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), required=False, allow_null=True)
+    completion_percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = [
             'id', 'username', 'mobile_or_email', 'user_type', 'selected_role', 'selected_primary_industry',
             'selected_primary_skill', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age',
-            'location', 'height', 'weight', 'view_count'
+            'location', 'height', 'weight', 'view_count', 'is_verified', 'completion_percentage'
         ]
-        read_only_fields = ['id', 'user', 'view_count']
+        read_only_fields = ['id', 'user', 'view_count', 'is_verified', 'completion_percentage']
+
+    def get_completion_percentage(self, obj):
+        return obj.calculate_completion_percentage()
 
     def validate_age(self, value):
         if value < 0:
@@ -91,9 +95,15 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_weight(self, value):
-        if not value.endswith('kg') and not value.endswith('lbs'):
-            raise serializers.ValidationError("Weight must be in 'kg' or 'lbs'.")
+        if value is not None:
+            if not (value.endswith('kg') or value.endswith('lbs')):
+                raise serializers.ValidationError("Weight must be in 'kg' or 'lbs'.")
         return value
+    
+class ProfileCompletionSerializer(serializers.Serializer):
+    completion_percentage = serializers.FloatField()
+    pending_items = serializers.ListField(child=serializers.DictField())
+
 # Profile Role Serializer
 class ProfileRoleSerializer(serializers.ModelSerializer):
     selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), required=True)

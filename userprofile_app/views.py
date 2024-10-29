@@ -3,7 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Education
-from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
+from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCompletionSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
 
 User = get_user_model()
 
@@ -380,6 +380,26 @@ class ProfileViewSet(viewsets.ViewSet):
             "message": "Profile update failed due to invalid data.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+        
+    def completion_status(self, request, user_id=None):
+        profile = get_profile(user_id)
+        
+        if not profile:
+            return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        completion_percentage, pending_items = profile.calculate_completion_percentage()
+        
+        data = {
+            "completion_percentage": completion_percentage,
+            "pending_items": pending_items
+        }
+
+        serializer = ProfileCompletionSerializer(data)
+        return Response({
+            "status": "success",
+            "message": "Profile completion status retrieved successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class ExperienceViewSet(viewsets.ViewSet):

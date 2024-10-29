@@ -70,9 +70,103 @@ class Profile(models.Model):
     height = models.FloatField(null=True, blank=True)
     weight = models.CharField(max_length=10, null=True, blank=True)
     view_count = models.PositiveIntegerField(default=0)
-
+    is_verified = models.BooleanField(default=False) 
+    
     def __str__(self):
         return f"Profile of {self.user.mobile_or_email}"
+
+    def calculate_completion_percentage(self):
+        total_sections = 9  # Total sections to complete for full verification
+        completed_sections = 0
+        pending_items = []
+
+        # Check if basic profile details are filled
+        if all([self.user_type, self.cover_image, self.profile_image, self.bio,
+                self.date_of_birth, self.location, self.height, self.weight]):
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Basic Profile Details",
+                "description": "Fill out all basic profile fields like bio, date of birth, height, weight, etc."
+            })
+
+        # Check if role is selected
+        if self.selected_role:
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Role Selection",
+                "description": "Select a role in your profile."
+            })
+
+        # Check if at least one industry and one skill are selected
+        if self.selected_industries.exists() and self.selected_skills.exists():
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Industry and Skill Selection",
+                "description": "Select at least one industry and one skill."
+            })
+
+        # Check if education and experience are provided
+        if Education.objects.filter(user=self.user).exists():
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Education Entry",
+                "description": "Add at least one education entry."
+            })
+            
+        if Experience.objects.filter(user=self.user).exists():
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Experience Entry",
+                "description": "Add at least one experience entry."
+            })
+
+        # Check if verifications are completed
+        if AadharVerification.objects.filter(user=self.user, status="Verification Completed").exists():
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Aadhar Verification",
+                "description": "Complete Aadhar verification."
+            })
+
+        if PassportVerification.objects.filter(user=self.user, status="Verification Completed").exists():
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Passport Verification",
+                "description": "Complete passport verification."
+            })
+
+        if DLVerification.objects.filter(user=self.user, status="Verification Completed").exists():
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Driving License Verification",
+                "description": "Complete driving license verification."
+            })
+
+        # Check if at least one document is uploaded
+        if DocumentUpload.objects.filter(user=self.user, verify_status=2).exists():  # Assuming status 2 means verified
+            completed_sections += 1
+        else:
+            pending_items.append({
+                "section": "Document Upload",
+                "description": "Upload at least one verified document."
+            })
+
+        # Calculate the percentage and round to 2 decimal places
+        completion_percentage = round((completed_sections / total_sections) * 100, 2)
+
+        # Update verification status based on completion
+        self.is_verified = completion_percentage == 100
+        self.save()  # Save the updated verification status
+
+        return completion_percentage, pending_items
 
 class ProfileView(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='profile_views')
