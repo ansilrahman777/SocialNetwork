@@ -26,10 +26,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('crea_app.urls')),
     path('api/', include('userprofile_app.urls')),
-
-    # path('api/gigwork/', include('gigwork.urls')), 
+    path('api/', include('social_app.urls')),
     
-     ]
+    ]
 
 
 if settings.SHOW_SWAGGER:

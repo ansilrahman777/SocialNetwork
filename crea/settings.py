@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'storages',
     'b2sdk',
     'userprofile_app',
+    'social_app',
 ]
 
 MIDDLEWARE = [
