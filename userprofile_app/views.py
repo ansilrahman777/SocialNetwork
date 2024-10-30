@@ -131,6 +131,19 @@ class IndustrySelectionView(viewsets.ViewSet):
 
         return Response({"status": "success", "message": "Industries removed successfully"}, status=status.HTTP_200_OK)
 
+    def list_selected(self, request, user_id=None):
+        if not user_id:
+            return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        selected_industries = profile.selected_industries.all()
+        serializer = IndustrySerializer(selected_industries, many=True)
+        
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
 
 class PrimaryIndustrySelectionView(viewsets.ViewSet):
     def create(self, request):
@@ -215,11 +228,25 @@ class SkillSelectionView(viewsets.ViewSet):
 
         return Response({"status": "success", "message": "Skills selected successfully", "data": {"selected_skills": skill_ids}}, status=status.HTTP_200_OK)
 
+    # List selected skills for a user
+    def list_selected(self, request, user_id=None):
+        profile = get_profile(user_id)
+        if not profile:
+            return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        selected_skills = profile.selected_skills.all()
+        if not selected_skills:
+            return Response({"status": "error", "message": "No selected skills found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SkillSerializer(selected_skills, many=True)
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    # Update selected skills for a user
     def update(self, request, user_id=None):
         skill_ids = request.data.get('skill_ids', [])
 
         if not user_id or not skill_ids:
-            return Response({"error": "user_id and skill_ids are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "user_id and skill_ids are required for update."}, status=status.HTTP_400_BAD_REQUEST)
 
         profile = get_profile(user_id)
         if not profile:
@@ -234,9 +261,10 @@ class SkillSelectionView(viewsets.ViewSet):
 
         return Response({"status": "success", "message": "Skills updated successfully", "data": {"selected_skills": skill_ids}}, status=status.HTTP_200_OK)
 
+    # Remove all selected skills for a user
     def destroy(self, request, user_id=None):
         if not user_id:
-            return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "user_id is required to delete skills."}, status=status.HTTP_400_BAD_REQUEST)
 
         profile = get_profile(user_id)
         if not profile:
@@ -245,7 +273,7 @@ class SkillSelectionView(viewsets.ViewSet):
         profile.selected_skills.clear()
         profile.save()
 
-        return Response({"status": "success", "message": "Skills removed successfully"}, status=status.HTTP_200_OK)
+        return Response({"status": "success", "message": "All selected skills removed successfully"}, status=status.HTTP_200_OK)
 
 class PrimarySkillSelectionView(viewsets.ViewSet):
     def create(self, request):

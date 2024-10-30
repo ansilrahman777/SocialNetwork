@@ -15,14 +15,14 @@ urlpatterns = [
     # Industry endpoints
     path('profile/get-industries/', IndustryListView.as_view({'get': 'list'}), name='industry-list'),
     path('profile/select-industries/', IndustrySelectionView.as_view({'post': 'create'}), name='industry-select'),
-    path('profile/select-industries/<int:user_id>/', IndustrySelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='industry-edit-delete'),
+    path('profile/select-industries/<int:user_id>/', IndustrySelectionView.as_view({'get': 'list_selected', 'patch': 'update', 'delete': 'destroy'}), name='industry-edit-delete'),  # Get, Update, Delete selected industries
     path('profile/primary-industry/', PrimaryIndustrySelectionView.as_view({'post': 'create'}), name='primary-industry-select'),
     path('profile/primary-industry/<int:user_id>/', PrimaryIndustrySelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='primary-industry-edit-delete'),
       
     # Skill endpoints
     path('profile/get-skills/', SkillListView.as_view({'get': 'list'}), name='skill-list'),
     path('profile/select-skills/', SkillSelectionView.as_view({'post': 'create'}), name='skill-select'),
-    path('profile/select-skills/<int:user_id>/', SkillSelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='skill-edit-delete'),
+    path('profile/select-skills/<int:user_id>/', SkillSelectionView.as_view({'get': 'list_selected', 'patch': 'update', 'delete': 'destroy'}), name='skill-edit-delete'),  # Get, Update, Delete selected skills
     path('profile/primary-skill/', PrimarySkillSelectionView.as_view({'post': 'create'}), name='primary-skill-select'),
     path('profile/primary-skill/<int:user_id>/', PrimarySkillSelectionView.as_view({'patch': 'update', 'delete': 'destroy'}), name='primary-skill-edit-delete'),
 
