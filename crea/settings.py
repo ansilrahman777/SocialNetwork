@@ -211,10 +211,38 @@ import os
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin.exceptions import FirebaseError
+import logging
+import base64
+
+
+# Fix Base64 String Function
+def fix_base64_string(token):
+    # Add padding to make the length a multiple of 4
+    padding_needed = len(token) % 4
+    if padding_needed:
+        token += '=' * (4 - padding_needed)
+    return token
+
+# Decode JWT Function
+def decode_jwt(token):
+    parts = token.split('.')
+    # Decode the payload
+    if len(parts) != 3:
+        print("Invalid token format.")
+        return None
+    try:
+        payload = base64.urlsafe_b64decode(fix_base64_string(parts[1]))
+        print("Decoded Payload:", payload)
+    except Exception as e:
+        print("Error decoding token:", e)
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load Firebase service account key
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This should point to the directory containing the JSON
-cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")  # Make sure this matches your file name
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This points to the directory containing the JSON
+cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", os.path.join(BASE_DIR, "serviceAccountKey.json"))  # Use environment variable
 
 # Check if the credential file exists
 if not os.path.exists(cred_path):
@@ -224,8 +252,8 @@ if not os.path.exists(cred_path):
 try:
     cred = credentials.Certificate(cred_path)
     firebase_app = firebase_admin.initialize_app(cred)
-    print("Firebase initialized successfully.")
+    logger.info("Firebase initialized successfully.")
 except FirebaseError as e:
-    print(f"Error initializing Firebase: {e}")
+    logger.error(f"Error initializing Firebase: {e}")
 except Exception as e:
-    print(f"An unexpected error occurred: {e}")
+    logger.error(f"An unexpected error occurred: {e}")
