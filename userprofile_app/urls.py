@@ -3,7 +3,7 @@ from .views import (
     DocumentUploadView, DocumentVerificationViewSet, ProfileViewSet, RoleListView, RoleSelectionView, IndustryListView, IndustrySelectionView,
     PrimaryIndustrySelectionView, SkillListView, SkillSelectionView,
     PrimarySkillSelectionView,
-    ExperienceViewSet, EducationViewSet
+    ExperienceViewSet, EducationViewSet, UnionAssociationViewSet
 )
 
 urlpatterns = [
@@ -29,14 +29,12 @@ urlpatterns = [
     # Profile create, edit and detail
     path('profile/create/', ProfileViewSet.as_view({'post': 'create'}), name='profile-create'),
     path('profile/<int:user_id>/', ProfileViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile-detail-edit'),
+    path('profile/<int:user_id>/completion-status/', ProfileViewSet.as_view({'get': 'completion_status'}), name='profile-completion-status'),
 
     # Experience endpoints
     path('profile/experience/', ExperienceViewSet.as_view({'post': 'create'}), name='experience-add'),
     path('profile/<int:user_id>/experience/', ExperienceViewSet.as_view({'get': 'list'}), name='user-experience'),
     path('profile/experience/<int:pk>/', ExperienceViewSet.as_view({'patch': 'update', 'delete': 'destroy'}), name='experience-detail'),
-    
-    path('profile/<int:user_id>/completion-status/', ProfileViewSet.as_view({'get': 'completion_status'}), name='profile-completion-status'),
-
 
     # Education endpoints
     path('profile/education/', EducationViewSet.as_view({'post': 'create'}), name='education-add'),
@@ -48,5 +46,10 @@ urlpatterns = [
     path('profile/docverifypassport/', DocumentVerificationViewSet.as_view({'post': 'verify_passport'}), name='doc-verify-passport'),
     path('profile/docverifydl/', DocumentVerificationViewSet.as_view({'post': 'verify_dl'}), name='doc-verify-dl'),
     path('profile/docupload/', DocumentUploadView.as_view({'post': 'create'}), name='doc-upload'),
+    
+    # UnionAssociation endpoints
+    path('profile/union-association/', UnionAssociationViewSet.as_view({'post': 'create'}), name='union-association-add'),
+    path('profile/<int:user_id>/union-association/', UnionAssociationViewSet.as_view({'get': 'list'}), name='user-union-association'),
+    path('profile/union-association/<int:pk>/', UnionAssociationViewSet.as_view({'patch': 'update', 'delete': 'destroy'}), name='union-association-detail'),
 
 ]

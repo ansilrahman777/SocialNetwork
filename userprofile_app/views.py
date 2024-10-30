@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Education
-from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCompletionSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer
+from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Education, UnionAssociation
+from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCompletionSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer, UnionAssociationSerializer
 
 User = get_user_model()
 
@@ -627,3 +627,77 @@ class DocumentUploadView(viewsets.ViewSet):
             "message": "File upload failed",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+        
+class UnionAssociationViewSet(viewsets.ViewSet):
+    # permission_classes = [IsAuthenticated]
+    
+    def list(self, request, user_id=None):
+        if not user_id:
+            return Response({"error": "user_id is a required parameter."}, status=status.HTTP_400_BAD_REQUEST)
+
+        unions = UnionAssociation.objects.filter(user_id=user_id)
+        if not unions.exists():
+            return Response({
+                "status": "error",
+                "message": "No union or association records found for the specified user.",
+                "data": []
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UnionAssociationSerializer(unions, many=True)
+        return Response({
+            "status": "success",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def create(self, request):
+        serializer = UnionAssociationSerializer(data=request.data)
+        
+        if not request.data.get('user'):
+            return Response({"error": "User ID is required to create union/association entry."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "Union/Association added successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            "status": "error",
+            "message": "Union/Association creation failed due to invalid data.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        try:
+            union = UnionAssociation.objects.get(pk=pk)
+        except UnionAssociation.DoesNotExist:
+            return Response({"error": "Union/Association not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = UnionAssociationSerializer(union, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "Union/Association updated successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            "status": "error",
+            "message": "Union/Association update failed due to invalid data.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        try:
+            union = UnionAssociation.objects.get(pk=pk)
+            union.delete()
+            return Response({
+                "status": "success",
+                "message": "Union/Association deleted successfully"
+            }, status=status.HTTP_200_OK)
+        except UnionAssociation.DoesNotExist:
+            return Response({"error": "Union/Association not found."}, status=status.HTTP_404_NOT_FOUND)

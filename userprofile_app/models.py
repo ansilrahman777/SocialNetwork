@@ -222,5 +222,13 @@ class DocumentUpload(models.Model):
 
     def __str__(self):
         return f"Document uploaded by {self.user.mobile_or_email}"
+    
+class UnionAssociation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)  # Name of the Union or Association
+    member_since = models.DateField()
+
+    def __str__(self):
+        return f"{self.name} - Member since {self.member_since}"
 
 

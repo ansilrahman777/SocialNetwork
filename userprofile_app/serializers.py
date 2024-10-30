@@ -1,6 +1,6 @@
 import datetime
 from rest_framework import serializers
-from .models import DocumentUpload, Profile, Role, Industry, Skill, Experience, Education, AadharVerification, PassportVerification, DLVerification
+from .models import DocumentUpload, Profile, Role, Industry, Skill, Experience, Education, AadharVerification, PassportVerification, DLVerification, UnionAssociation
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -183,4 +183,10 @@ class DocumentUploadSerializer(serializers.ModelSerializer):
         if extension not in allowed_formats:
             raise serializers.ValidationError("File must be in JPG, PNG, or PDF format.")
         return value
+
+class UnionAssociationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UnionAssociation
+        fields = ['id', 'user', 'name', 'member_since']
+        read_only_fields = ['id']
 
