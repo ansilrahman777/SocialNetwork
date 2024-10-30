@@ -19,6 +19,9 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from firebase_admin import auth as firebase_auth
 from rest_framework_simplejwt.tokens import RefreshToken
+from firebase_admin import auth as firebase_auth
+from rest_framework_simplejwt.tokens import RefreshToken
+from .models import CustomUser
 
 
 CustomUser = get_user_model()
@@ -217,7 +220,6 @@ class RegisterView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -252,7 +254,7 @@ class LoginView(APIView):
         except Exception as e:
             return Response({
                 "status": "error",
-                "message": str(e)
+                "message": "An unexpected error occurred: " + str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def handle_traditional_login(self, mobile_or_email, password):
@@ -292,16 +294,11 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user)
             return self.generate_response(user, refresh, "2")  # Pass "2" for Google login
 
-        except firebase_auth.InvalidIdTokenError:
+        except Exception as e:  # Catch any Firebase-related errors
             return Response({
                 "status": "error",
-                "message": "Invalid Google token."
+                "message": "Invalid Google token. " + str(e)
             }, status=status.HTTP_401_UNAUTHORIZED)
-        except Exception as e:
-            return Response({
-                "status": "error",
-                "message": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def handle_apple_login(self, apple_token):
         if not apple_token:
@@ -321,16 +318,11 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user)
             return self.generate_response(user, refresh, "3")  # Pass "3" for Apple login
 
-        except firebase_auth.InvalidIdTokenError:
+        except Exception as e:  # Catch any Firebase-related errors
             return Response({
                 "status": "error",
-                "message": "Invalid Apple token."
+                "message": "Invalid Apple token. " + str(e)
             }, status=status.HTTP_401_UNAUTHORIZED)
-        except Exception as e:
-            return Response({
-                "status": "error",
-                "message": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Helper function to generate the response with tokens
     def generate_response(self, user, refresh, login_method):
@@ -620,4 +612,3 @@ class LogoutView(generics.GenericAPIView):
                     "error": True
                 }
             }, status=status.HTTP_400_BAD_REQUEST)
-        

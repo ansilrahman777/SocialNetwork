@@ -15,6 +15,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from decouple import config, Csv
+from datetime import timedelta
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -133,6 +134,13 @@ REST_FRAMEWORK = {
     ),
 }
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -199,17 +207,14 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
-
 import os
 import firebase_admin
 from firebase_admin import credentials
-from firebase_admin import auth
 from firebase_admin.exceptions import FirebaseError
 
 # Load Firebase service account key
-# Since serviceAccountKey.json is in the same directory as this script, we can get the current directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This should point to the crea directory
-cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This should point to the directory containing the JSON
+cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")  # Make sure this matches your file name
 
 # Check if the credential file exists
 if not os.path.exists(cred_path):
@@ -224,19 +229,3 @@ except FirebaseError as e:
     print(f"Error initializing Firebase: {e}")
 except Exception as e:
     print(f"An unexpected error occurred: {e}")
-
-def verify_google_token(google_token):
-    try:
-        decoded_token = auth.verify_id_token(google_token)
-        return decoded_token  # Contains user info
-    except auth.InvalidIdTokenError:
-        return {"status": "error", "message": "Invalid Google token."}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-# Example usage:
-if __name__ == "__main__":
-    # Replace 'your_google_token' with an actual token for testing
-    google_token = 'your_google_token'
-    verification_result = verify_google_token(google_token)
-    print(verification_result)
