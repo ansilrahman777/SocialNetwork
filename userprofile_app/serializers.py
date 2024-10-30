@@ -100,9 +100,11 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Weight must be in 'kg' or 'lbs'.")
         return value
     
-class ProfileCompletionSerializer(serializers.Serializer):
-    completion_percentage = serializers.FloatField()
-    pending_items = serializers.ListField(child=serializers.DictField())
+class ProfileCompletionStatusSerializer(serializers.Serializer):
+    totalCompletion = serializers.DictField()
+    sections = serializers.ListField()
+    pendingUpdates = serializers.ListField()
+    verificationStatus = serializers.DictField()
 
 # Profile Role Serializer
 class ProfileRoleSerializer(serializers.ModelSerializer):

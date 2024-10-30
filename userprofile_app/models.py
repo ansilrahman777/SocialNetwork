@@ -75,98 +75,127 @@ class Profile(models.Model):
     def __str__(self):
         return f"Profile of {self.user.mobile_or_email}"
 
-    def calculate_completion_percentage(self):
-        total_sections = 9  # Total sections to complete for full verification
-        completed_sections = 0
-        pending_items = []
-
-        # Check if basic profile details are filled
-        if all([self.user_type, self.cover_image, self.profile_image, self.bio,
-                self.date_of_birth, self.location, self.height, self.weight]):
-            completed_sections += 1
+    def get_status_color(self, percentage):
+        if percentage <= 25:
+            return "#FF5722"  # Red
+        elif percentage <= 50:
+            return "#FFC107"  # Yellow
+        elif percentage <= 75:
+            return "#FF9800"  # Orange
         else:
-            pending_items.append({
-                "section": "Basic Profile Details",
-                "description": "Fill out all basic profile fields like bio, date of birth, height, weight, etc."
-            })
+            return "#4CAF50"  # Green
 
-        # Check if role is selected
-        if self.selected_role:
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Role Selection",
-                "description": "Select a role in your profile."
-            })
+    def calculate_section_completion(self):
+        sections = [
+            {"id": "1", "name": "Basic Profile", "weight": 20, "completion": 0},
+            {"id": "2", "name": "Experience", "weight": 15, "completion": 0},
+            {"id": "3", "name": "Education", "weight": 20, "completion": 0},
+            {"id": "4", "name": "Industry", "weight": 10, "completion": 0},
+            {"id": "5", "name": "Skillset", "weight": 15, "completion": 0},
+            {"id": "6", "name": "Union & Association", "weight": 10, "completion": 0},
+            {"id": "7", "name": "Document Upload & Verification", "weight": 10, "completion": 0},
+        ]
 
-        # Check if at least one industry and one skill are selected
-        if self.selected_industries.exists() and self.selected_skills.exists():
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Industry and Skill Selection",
-                "description": "Select at least one industry and one skill."
-            })
+        total_completion = 0
+        pending_updates = []
+        verification_status = {
+            "Aadhar Verification": "Pending",
+            "Passport Verification": "Pending",
+            "DL Verification": "Pending"
+        }
 
-        # Check if education and experience are provided
-        if Education.objects.filter(user=self.user).exists():
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Education Entry",
-                "description": "Add at least one education entry."
-            })
-            
+        # 1. Basic Profile
+        if all([self.user_type, self.cover_image, self.profile_image, self.bio, self.date_of_birth, self.location, self.height, self.weight]):
+            sections[0]["completion"] = 100
+        total_completion += sections[0]["completion"] * (sections[0]["weight"] / 100)
+
+        # 2. Experience
         if Experience.objects.filter(user=self.user).exists():
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Experience Entry",
-                "description": "Add at least one experience entry."
-            })
+            sections[1]["completion"] = 100
+        total_completion += sections[1]["completion"] * (sections[1]["weight"] / 100)
 
-        # Check if verifications are completed
+        # 3. Education
+        if Education.objects.filter(user=self.user).exists():
+            sections[2]["completion"] = 100
+        total_completion += sections[2]["completion"] * (sections[2]["weight"] / 100)
+
+        # 4. Industry
+        if self.selected_industries.exists():
+            sections[3]["completion"] = 100
+        total_completion += sections[3]["completion"] * (sections[3]["weight"] / 100)
+
+        # 5. Skillset
+        if self.selected_skills.exists():
+            sections[4]["completion"] = 100
+        total_completion += sections[4]["completion"] * (sections[4]["weight"] / 100)
+
+        # 6. Union & Association
+        if UnionAssociation.objects.filter(user=self.user).exists():
+            sections[5]["completion"] = 100
+        total_completion += sections[5]["completion"] * (sections[5]["weight"] / 100)
+
+        # 7. Document Upload & Verification
+        document_verified = False
+        document_upload_verified = False
+
+        # Check individual verification status
         if AadharVerification.objects.filter(user=self.user, status="Verification Completed").exists():
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Aadhar Verification",
-                "description": "Complete Aadhar verification."
-            })
+            document_verified = True
+            verification_status["Aadhar Verification"] = "Verified"
 
         if PassportVerification.objects.filter(user=self.user, status="Verification Completed").exists():
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Passport Verification",
-                "description": "Complete passport verification."
-            })
+            document_verified = True
+            verification_status["Passport Verification"] = "Verified"
 
         if DLVerification.objects.filter(user=self.user, status="Verification Completed").exists():
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Driving License Verification",
-                "description": "Complete driving license verification."
-            })
+            document_verified = True
+            verification_status["DL Verification"] = "Verified"
 
-        # Check if at least one document is uploaded
+        # Check if any document upload is verified
         if DocumentUpload.objects.filter(user=self.user, verify_status=2).exists():  # Assuming status 2 means verified
-            completed_sections += 1
-        else:
-            pending_items.append({
-                "section": "Document Upload",
-                "description": "Upload at least one verified document."
+            document_upload_verified = True
+
+        # Set completion status for document verification if at least one is verified
+        if document_verified and document_upload_verified:
+            sections[6]["completion"] = 100
+        total_completion += sections[6]["completion"] * (sections[6]["weight"] / 100)
+
+        # Add pending section if document verification and upload are incomplete
+        if sections[6]["completion"] < 100:
+            pending_updates.append({
+                "id": sections[6]["id"],
+                "name": sections[6]["name"],
+                "pendingPercentage": 100 - sections[6]["completion"],
+                "statusColor": "#2196F3"  # Blue
             })
 
-        # Calculate the percentage and round to 2 decimal places
-        completion_percentage = round((completed_sections / total_sections) * 100, 2)
+        # Format response and assign colors
+        for section in sections:
+            completion = section["completion"]
+            section["completionPercentage"] = completion * (section["weight"] / 100)
+            section["statusColor"] = self.get_status_color(completion)
 
-        # Update verification status based on completion
-        self.is_verified = completion_percentage == 100
-        self.save()  # Save the updated verification status
+            # Track pending sections
+            if completion < 100:
+                pending_updates.append({
+                    "id": section["id"],
+                    "name": section["name"],
+                    "pendingPercentage": 100 - completion,
+                    "statusColor": "#2196F3"  # Blue
+                })
 
-        return completion_percentage, pending_items
+        total_completion_percentage = round(total_completion, 2)
+        total_status_color = self.get_status_color(total_completion_percentage)
+
+        return {
+            "totalCompletion": {
+                "percentage": total_completion_percentage,
+                "statusColor": total_status_color
+            },
+            "sections": sections,
+            "pendingUpdates": pending_updates,
+            "verificationStatus": verification_status
+        }
 
 class ProfileView(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='profile_views')

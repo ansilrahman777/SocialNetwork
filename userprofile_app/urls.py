@@ -29,7 +29,7 @@ urlpatterns = [
     # Profile create, edit and detail
     path('profile/create/', ProfileViewSet.as_view({'post': 'create'}), name='profile-create'),
     path('profile/<int:user_id>/', ProfileViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile-detail-edit'),
-    path('profile/<int:user_id>/completion-status/', ProfileViewSet.as_view({'get': 'completion_status'}), name='profile-completion-status'),
+    path('profile/<int:user_id>/profile-completion/', ProfileViewSet.as_view({'get': 'profile_completion'}), name='profile-completion-status'),
 
     # Experience endpoints
     path('profile/experience/', ExperienceViewSet.as_view({'post': 'create'}), name='experience-add'),
