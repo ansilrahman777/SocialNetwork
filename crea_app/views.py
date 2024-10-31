@@ -1,19 +1,15 @@
-<<<<<<< HEAD
 # views.py
 from datetime import timedelta
 from django.forms import ValidationError
 from django.core.validators import validate_email
 from rest_framework import status
-=======
 from rest_framework import status, generics
->>>>>>> gobika
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
-<<<<<<< HEAD
 from .utils import send_otp_via_sms
 from .models import CustomUser, OTPVerification, UserSession
 from .serializers import UserSerializer,RegisterSerializer, OTPSerializer
@@ -26,8 +22,6 @@ from .models import PasswordResetRequest
 from .serializers import ResetPasswordSerializer, ChangePasswordSerializer
 from django.contrib.auth import get_user_model
 from .models import CustomUser
-=======
->>>>>>> gobika
 from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model

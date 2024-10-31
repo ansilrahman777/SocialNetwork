@@ -45,7 +45,7 @@ class Skill(models.Model):
 
 
 class AadharVerification(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='aadhar_verifications')
     mobile_or_email = models.CharField(max_length=255)
     aadhar_cn = models.CharField(max_length=12, unique=True)
     aadhar_fname = models.CharField(max_length=255)
@@ -57,7 +57,7 @@ class AadharVerification(models.Model):
 
 
 class PassportVerification(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='passport_verifications')
     mobile_or_email = models.CharField(max_length=255)
     ps_cn = models.CharField(max_length=12, unique=True)
     ps_fname = models.CharField(max_length=255)

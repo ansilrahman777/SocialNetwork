@@ -22,10 +22,10 @@ idna==3.10
 inflection==0.5.1
 jmespath==1.0.1
 logfury==1.0.1
-mysqlclient==2.2.4
+# mysqlclient==2.2.4
 packaging==24.1
 phx-class-registry==4.1.0
-pillow==10.3.0
+# pillow==10.3.0
 platformdirs==4.3.6
 pycparser==2.22
 PyJWT==2.9.0
