@@ -15,6 +15,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 from decouple import config, Csv
+from datetime import timedelta
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -45,12 +46,14 @@ INSTALLED_APPS = [
     'crea_app',
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework.authtoken',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'storages',
     'b2sdk',
     'userprofile_app',
     'social_app',
+    'profile_app',
+    'forms',
 ]
 
 MIDDLEWARE = [
@@ -94,16 +97,7 @@ DATABASES = {
     }
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'creanet_database',  
-#         'USER': 'root',
-#         'PASSWORD': 'ansil',
-#         'HOST': 'localhost',
-#         'PORT': '3306',            
-#     }
-# }
+
 
 
 # Password validation
@@ -131,6 +125,19 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 
@@ -205,3 +212,53 @@ MSG91_API_KEY = os.getenv('MSG91_API_KEY')
 MSG91_SMS_TEMPLATE_ID = os.getenv('MSG91_SMS_TEMPLATE_ID')
 MSG91_SMS_SENDER_ID = os.getenv('MSG91_SMS_SENDER_ID')
 MSG91_EMAIL_SENDER_NAME = os.getenv('MSG91_EMAIL_SENDER_NAME')
+import os
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin.exceptions import FirebaseError
+import logging
+import base64
+
+
+# Fix Base64 String Function
+def fix_base64_string(token):
+    # Add padding to make the length a multiple of 4
+    padding_needed = len(token) % 4
+    if padding_needed:
+        token += '=' * (4 - padding_needed)
+    return token
+
+# Decode JWT Function
+def decode_jwt(token):
+    parts = token.split('.')
+    # Decode the payload
+    if len(parts) != 3:
+        print("Invalid token format.")
+        return None
+    try:
+        payload = base64.urlsafe_b64decode(fix_base64_string(parts[1]))
+        print("Decoded Payload:", payload)
+    except Exception as e:
+        print("Error decoding token:", e)
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load Firebase service account key
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This points to the directory containing the JSON
+cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", os.path.join(BASE_DIR, "serviceAccountKey.json"))  # Use environment variable
+
+# Check if the credential file exists
+if not os.path.exists(cred_path):
+    raise FileNotFoundError(f"The service account key file does not exist at the path: {cred_path}")
+
+# Initialize Firebase
+try:
+    cred = credentials.Certificate(cred_path)
+    firebase_app = firebase_admin.initialize_app(cred)
+    logger.info("Firebase initialized successfully.")
+except FirebaseError as e:
+    logger.error(f"Error initializing Firebase: {e}")
+except Exception as e:
+    logger.error(f"An unexpected error occurred: {e}")

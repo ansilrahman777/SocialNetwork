@@ -6,6 +6,7 @@ from .models import CustomUser
 from .models import OnboardingImage
 
 
+
 class OnboardingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = OnboardingImage
@@ -55,19 +56,28 @@ class OTPSerializer(serializers.ModelSerializer):
         fields = ['user','mobile_or_email', 'otp', 'otp_expires_at', 'is_verified']
 
 
-    
 class ResetPasswordSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
     mobile_or_email = serializers.EmailField()
 
-
-class ChangePasswordSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
-    new_password = serializers.CharField(write_only=True)
-    
-    def validate_user_id(self, value):
+    def validate_mobile_or_email(self, value):
+        # Check if the user exists with the given mobile or email
         User = get_user_model()
-        if not User.objects.filter(id=value).exists():
+        if not User.objects.filter(mobile_or_email=value).exists():
             raise serializers.ValidationError("User does not exist.")
         return value
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, write_only=True)
+    confirm_password = serializers.CharField(required=True, write_only=True)
+
+    def validate_new_password(self, value):
+        # Add custom password validation if needed (e.g., length, complexity)
+        if len(value) < 8:
+            raise serializers.ValidationError("New password must be at least 8 characters long.")
+        return value
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(required=True)
 

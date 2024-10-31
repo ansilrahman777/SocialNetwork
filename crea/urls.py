@@ -27,6 +27,10 @@ urlpatterns = [
     path('api/',include('crea_app.urls')),
     path('api/', include('userprofile_app.urls')),
     path('api/', include('social_app.urls')),
+    path('api/', include('forms.urls')),
+    path('api/profile/', include('profile_app.urls')),
+
+    # path('api/gigwork/', include('gigwork.urls')), 
     
     ]
 
