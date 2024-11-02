@@ -82,7 +82,7 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user', 'view_count', 'is_verified', 'completion_percentage']
 
     def get_completion_percentage(self, obj):
-        return obj.calculate_completion_percentage()
+        return obj.calculate_section_completion()
 
     def validate_age(self, value):
         if value < 0:

@@ -1,102 +1,221 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.utils import timezone
 from .models import Follow, FollowRequest, Block
-from .serializers import FollowSerializer, FollowRequestSerializer, BlockSerializer
+from .serializers import FollowRequestSerializer, FollowSerializer, BlockSerializer
 from django.contrib.auth import get_user_model
+from userprofile_app.models import Profile, Role
 
 User = get_user_model()
 
-class FollowViewSet(viewsets.ViewSet):
-    def follow(self, request, user_id=None):
-        follower = request.user
-        if not follower.is_authenticated or follower.id == user_id:
-            return Response({"error": "Invalid follow request"}, status=status.HTTP_400_BAD_REQUEST)
+class ListFollowersView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-        following = User.objects.filter(id=user_id).first()
-        if not following:
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        follow, created = Follow.objects.get_or_create(follower=follower, following=following)
-        if not created:
-            return Response({"status": "Already following"}, status=status.HTTP_200_OK)
+        followers = Follow.objects.filter(following=user)
+        data = []
+        for follower in followers:
+            follower_user = follower.follower
+            try:
+                follower_profile = Profile.objects.get(user=follower_user)
+                role_name = follower_profile.selected_role.role_name if follower_profile.selected_role else ""
+                profile_pic_url = follower_profile.profile_image or ""
+            except Profile.DoesNotExist:
+                role_name = ""
+                profile_pic_url = ""
+            data.append({
+                "follower_id": str(follower_user.id),
+                "name": follower_user.username or "",
+                "role": role_name,
+                "profile_pic_url": profile_pic_url
+            })
 
-        serializer = FollowSerializer(follow)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({
+            "user_id": str(user_id),
+            "followers": data
+        }, status=status.HTTP_200_OK)
 
-    def unfollow(self, request, user_id=None):
-        follow = Follow.objects.filter(follower=request.user, following_id=user_id).first()
-        if not follow:
-            return Response({"error": "Not following user"}, status=status.HTTP_404_NOT_FOUND)
-        
-        follow.delete()
-        return Response({"status": "Unfollowed successfully"}, status=status.HTTP_200_OK)
+class ListFollowingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-    def list_following(self, request):
-        following = Follow.objects.filter(follower=request.user)
-        serializer = FollowSerializer(following, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    def list_followers(self, request):
-        followers = Follow.objects.filter(following=request.user)
-        serializer = FollowSerializer(followers, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        following = Follow.objects.filter(follower=user)
+        data = []
+        for follow in following:
+            following_user = follow.following
+            try:
+                following_profile = Profile.objects.get(user=following_user)
+                role_name = following_profile.selected_role.role_name if following_profile.selected_role else ""
+                profile_pic_url = following_profile.profile_image or ""
+            except Profile.DoesNotExist:
+                role_name = ""
+                profile_pic_url = ""
+            data.append({
+                "followed_id": str(following_user.id),
+                "name": following_user.username or "",
+                "role": role_name,
+                "profile_pic_url": profile_pic_url
+            })
+
+        return Response({
+            "user_id": str(user_id),
+            "following": data
+        }, status=status.HTTP_200_OK)
 
 class FollowRequestViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
     def send_request(self, request, user_id=None):
         requester = request.user
-        if requester.id == user_id:
-            return Response({"error": "Cannot send follow request to self"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        recipient = User.objects.filter(id=user_id).first()
-        if not recipient:
+        if int(requester.id) == int(user_id):
+            return Response({"error": "You cannot send a follow request to yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            recipient = User.objects.get(id=user_id)
+        except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        follow_request, created = FollowRequest.objects.get_or_create(requester=requester, recipient=recipient)
-        if not created:
-            return Response({"status": "Follow request already sent"}, status=status.HTTP_200_OK)
 
-        serializer = FollowRequestSerializer(follow_request)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if Block.objects.filter(blocker=recipient, blocked=requester).exists():
+            return Response({"error": "You are blocked by this user."}, status=status.HTTP_403_FORBIDDEN)
 
-    def accept_request(self, request, request_id=None):
-        follow_request = FollowRequest.objects.filter(id=request_id, recipient=request.user, status='pending').first()
-        if not follow_request:
+        if FollowRequest.objects.filter(requester=requester, recipient=recipient, status='pending').exists():
+            return Response({"error": "Follow request already sent"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Follow.objects.filter(follower=requester, following=recipient).exists():
+            return Response({"error": "User is already following this user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        follow_request = FollowRequest.objects.create(requester=requester, recipient=recipient)
+        return Response({
+            "message": "Follow request sent successfully",
+            "data": {
+                "user_id": str(recipient.id),
+                "follower_id": str(requester.id),
+                "requested_at": follow_request.created_at.isoformat()
+            }
+        }, status=status.HTTP_201_CREATED)
+
+    def accept_request(self, request, user_id=None):
+        recipient = request.user
+        try:
+            follow_request = FollowRequest.objects.get(requester_id=user_id, recipient=recipient, status='pending')
+        except FollowRequest.DoesNotExist:
             return Response({"error": "Follow request not found or already handled"}, status=status.HTTP_404_NOT_FOUND)
-        
+
         follow_request.status = 'accepted'
         follow_request.save()
-        Follow.objects.create(follower=follow_request.requester, following=request.user)
+        follow = Follow.objects.create(follower=follow_request.requester, following=recipient)
 
-        return Response({"status": "Follow request accepted"}, status=status.HTTP_200_OK)
+        return Response({
+            "message": "Follow request accepted",
+            "data": {
+                "user_id": str(follow.following.id),
+                "follower_id": str(follow.follower.id),
+                "followed_at": follow.followed_at.isoformat()
+            }
+        }, status=status.HTTP_200_OK)
 
-    def cancel_request(self, request, request_id=None):
-        follow_request = FollowRequest.objects.filter(id=request_id, requester=request.user, status='pending').first()
-        if not follow_request:
+    def cancel_request(self, request, user_id=None):
+        requester = request.user
+        try:
+            follow_request = FollowRequest.objects.get(requester=requester, recipient_id=user_id, status='pending')
+        except FollowRequest.DoesNotExist:
             return Response({"error": "Follow request not found or already handled"}, status=status.HTTP_404_NOT_FOUND)
 
         follow_request.status = 'cancelled'
         follow_request.save()
-        return Response({"status": "Follow request cancelled"}, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "Follow request canceled."
+        }, status=status.HTTP_200_OK)
+
+    def unfollow(self, request, user_id=None):
+        follower = request.user
+        try:
+            follow = Follow.objects.get(follower=follower, following_id=user_id)
+        except Follow.DoesNotExist:
+            return Response({"error": "User is not currently following this user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        follow.delete()
+        return Response({
+            "message": "Unfollowed successfully",
+            "data": {
+                "user_id": str(user_id),
+                "follower_id": str(follower.id),
+                "unfollowed_at": timezone.now().isoformat()
+            }
+        }, status=status.HTTP_200_OK)
+
+    def list_requests(self, request):
+        user = request.user
+        follow_requests = FollowRequest.objects.filter(recipient=user, status='pending')
+        data = []
+        for req in follow_requests:
+            requester = req.requester
+            try:
+                requester_profile = Profile.objects.get(user=requester)
+                profile_pic_url = requester_profile.profile_image or ""
+                role_name = requester_profile.selected_role.role_name if requester_profile.selected_role else ""
+            except Profile.DoesNotExist:
+                profile_pic_url = ""
+                role_name = ""
+            data.append({
+                "requester_id": str(requester.id),
+                "name": requester.username or "",
+                "role": role_name,
+                "profile_pic_url": profile_pic_url,
+                "requested_at": req.created_at.isoformat()
+            })
+        return Response({
+            "user_id": str(user.id),
+            "follow_requests": data
+        }, status=status.HTTP_200_OK)
 
 class BlockViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
     def block_user(self, request, user_id=None):
         blocker = request.user
-        blocked = User.objects.filter(id=user_id).first()
-        if not blocked:
+        if int(blocker.id) == int(user_id):
+            return Response({"error": "You cannot block yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            blocked_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        reason = request.data.get("reason", "")
-        block, created = Block.objects.get_or_create(blocker=blocker, blocked=blocked, defaults={"reason": reason})
-        if not created:
-            return Response({"status": "User already blocked"}, status=status.HTTP_200_OK)
+        if Block.objects.filter(blocker=blocker, blocked=blocked_user).exists():
+            return Response({"error": "User is already blocked"}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = BlockSerializer(block)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        reason = request.data.get("reason", "")
+        block = Block.objects.create(blocker=blocker, blocked=blocked_user, reason=reason)
+        return Response({
+            "success": True,
+            "message": "User has been successfully blocked.",
+            "data": {
+                "blocked_user_id": str(blocked_user.id),
+                "reason": reason,
+                "blocked_at": block.blocked_at.isoformat()
+            }
+        }, status=status.HTTP_201_CREATED)
 
     def unblock_user(self, request, user_id=None):
-        block = Block.objects.filter(blocker=request.user, blocked_id=user_id).first()
-        if not block:
+        blocker = request.user
+        try:
+            block = Block.objects.get(blocker=blocker, blocked_id=user_id)
+        except Block.DoesNotExist:
             return Response({"error": "User not blocked"}, status=status.HTTP_404_NOT_FOUND)
-        
+
         block.delete()
-        return Response({"status": "User unblocked successfully"}, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "User unblocked successfully"
+        }, status=status.HTTP_200_OK)

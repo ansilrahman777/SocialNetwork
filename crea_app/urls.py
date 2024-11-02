@@ -4,6 +4,7 @@ from django.urls import path
 from .views import RegisterView, LoginView, VerifyOTPView, ResendOTPView,LogoutView
 from .views import ResetPasswordView, ChangePasswordView
 from .views import OnboardingAPIView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 
 
@@ -18,5 +19,6 @@ urlpatterns = [
     path('resendotp/', ResendOTPView.as_view(), name='resend_otp'),
     path('profile/resetpassword/', ResetPasswordView.as_view(), name='reset-password'),
     path('profile/changepassword/', ChangePasswordView.as_view(), name='change-password'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
 ]

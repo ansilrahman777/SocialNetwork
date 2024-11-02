@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Education, UnionAssociation
 from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCompletionStatusSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer, UnionAssociationSerializer
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 User = get_user_model()
 
@@ -16,6 +17,8 @@ def get_profile(user_id):
 
 
 class RoleListView(viewsets.ViewSet):
+    permission_classes = [AllowAny]
+    
     def list(self, request):
         roles = Role.objects.all()
         if not roles.exists():
@@ -25,6 +28,8 @@ class RoleListView(viewsets.ViewSet):
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
 class RoleSelectionView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def create(self, request):
         user_id = request.data.get('user_id')
         role_id = request.data.get('role_id')
@@ -70,6 +75,8 @@ class RoleSelectionView(viewsets.ViewSet):
         return Response({"status": "success", "message": "Role updated successfully", "data": {"role": new_role.role_name, "id": new_role.id}}, status=status.HTTP_200_OK)
 
 class IndustryListView(viewsets.ViewSet):
+    permission_classes = [AllowAny]
+    
     def list(self, request):
         industries = Industry.objects.all()
         if not industries.exists():
@@ -79,6 +86,8 @@ class IndustryListView(viewsets.ViewSet):
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
 class IndustrySelectionView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def create(self, request):
         user_id = request.data.get('user_id')
         industry_ids = request.data.get('industry_ids', [])
@@ -144,8 +153,9 @@ class IndustrySelectionView(viewsets.ViewSet):
         
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
-
 class PrimaryIndustrySelectionView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def create(self, request):
         user_id = request.data.get('user_id')
         primary_industry_id = request.data.get('primary_industry_id')
@@ -199,6 +209,8 @@ class PrimaryIndustrySelectionView(viewsets.ViewSet):
         return Response({"status": "success", "message": "Primary industry removed successfully"}, status=status.HTTP_200_OK)
 
 class SkillListView(viewsets.ViewSet):
+    permission_classes = [AllowAny]
+    
     def list(self, request):
         skills = Skill.objects.all()
         if not skills.exists():
@@ -208,6 +220,8 @@ class SkillListView(viewsets.ViewSet):
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
 class SkillSelectionView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def create(self, request):
         user_id = request.data.get('user_id')
         skill_ids = request.data.get('skill_ids', [])
@@ -276,6 +290,8 @@ class SkillSelectionView(viewsets.ViewSet):
         return Response({"status": "success", "message": "All selected skills removed successfully"}, status=status.HTTP_200_OK)
 
 class PrimarySkillSelectionView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def create(self, request):
         user_id = request.data.get('user_id')
         primary_skill_id = request.data.get('primary_skill_id')
@@ -329,8 +345,9 @@ class PrimarySkillSelectionView(viewsets.ViewSet):
         return Response({"status": "success", "message": "Primary skill removed successfully"}, status=status.HTTP_200_OK)
 
 class ProfileViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def create(self, request):
-        # permission_classes = [IsAuthenticated]
         user_id = request.data.get('user_id')
         
         if not user_id:
@@ -425,6 +442,8 @@ class ProfileViewSet(viewsets.ViewSet):
         }, status=status.HTTP_200_OK)
 
 class ExperienceViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def list(self, request, user_id=None):
         if not user_id:
             return Response({"error": "user_id is a required parameter."}, status=status.HTTP_400_BAD_REQUEST)
@@ -497,6 +516,8 @@ class ExperienceViewSet(viewsets.ViewSet):
             return Response({"error": "Experience not found."}, status=status.HTTP_404_NOT_FOUND)
 
 class EducationViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+    
     def list(self, request, user_id=None):
         if not user_id:
             return Response({"error": "user_id is a required parameter."}, status=status.HTTP_400_BAD_REQUEST)
@@ -568,8 +589,8 @@ class EducationViewSet(viewsets.ViewSet):
         except Education.DoesNotExist:
             return Response({"error": "Education record not found."}, status=status.HTTP_404_NOT_FOUND)
 
-
 class DocumentVerificationViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
 
     def verify_aadhar(self, request):
         serializer = AadharVerificationSerializer(data=request.data)
@@ -616,9 +637,8 @@ class DocumentVerificationViewSet(viewsets.ViewSet):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
         
-
 class DocumentUploadView(viewsets.ViewSet):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def create(self, request):
         user = request.user
@@ -651,7 +671,7 @@ class DocumentUploadView(viewsets.ViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
         
 class UnionAssociationViewSet(viewsets.ViewSet):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def list(self, request, user_id=None):
         if not user_id:
