@@ -32,9 +32,17 @@ class Follow(models.Model):
         return f"{self.follower} follows {self.following}"
 
 class Block(models.Model):
+    COMMON_BLOCK_REASONS = [
+        ('spam', 'Spam'),
+        ('harassment', 'Harassment'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('other', 'Other')
+    ]
+
     blocker = models.ForeignKey(User, related_name='blocked_users_set', on_delete=models.CASCADE)
     blocked = models.ForeignKey(User, related_name='blocked_by_set', on_delete=models.CASCADE)
-    reason = models.TextField(blank=True, null=True)
+    common_reason = models.CharField(max_length=50, choices=COMMON_BLOCK_REASONS, blank=True, null=True)
+    reason_details = models.TextField(blank=True, null=True)
     blocked_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -42,3 +50,21 @@ class Block(models.Model):
 
     def __str__(self):
         return f"{self.blocker} blocked {self.blocked}"
+
+class Report(models.Model):
+    COMMON_REPORT_REASONS = [
+        ('spam', 'Spam'),
+        ('harassment', 'Harassment'),
+        ('fake_profile', 'Fake Profile'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('other', 'Other')
+    ]
+
+    reporter = models.ForeignKey(User, related_name='reported_by_set', on_delete=models.CASCADE)
+    reported = models.ForeignKey(User, related_name='reported_users_set', on_delete=models.CASCADE)
+    common_reason = models.CharField(max_length=50, choices=COMMON_REPORT_REASONS, blank=True, null=True)
+    details = models.TextField(blank=True, null=True)
+    reported_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.reporter} reported {self.reported}"

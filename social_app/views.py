@@ -2,8 +2,8 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
-from .models import Follow, FollowRequest, Block
-from .serializers import FollowRequestSerializer, FollowSerializer, BlockSerializer
+from .models import Follow, FollowRequest, Block, Report
+from .serializers import FollowRequestSerializer, FollowSerializer, BlockSerializer, ReasonSerializer, ReportSerializer
 from django.contrib.auth import get_user_model
 from userprofile_app.models import Profile, Role
 
@@ -78,22 +78,46 @@ class FollowRequestViewSet(viewsets.ViewSet):
 
     def send_request(self, request, user_id=None):
         requester = request.user
+
+        # Prevent self-follow requests
         if int(requester.id) == int(user_id):
             return Response({"error": "You cannot send a follow request to yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if the recipient exists
         try:
             recipient = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Check if requester is blocked by the recipient
         if Block.objects.filter(blocker=recipient, blocked=requester).exists():
             return Response({"error": "You are blocked by this user."}, status=status.HTTP_403_FORBIDDEN)
 
-        if FollowRequest.objects.filter(requester=requester, recipient=recipient, status='pending').exists():
-            return Response({"error": "Follow request already sent"}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if there's an existing follow request or follow relationship
+        follow_request = FollowRequest.objects.filter(requester=requester, recipient=recipient).first()
+        follow_exists = Follow.objects.filter(follower=requester, following=recipient).exists()
 
-        if Follow.objects.filter(follower=requester, following=recipient).exists():
+        if follow_exists:
             return Response({"error": "User is already following this user"}, status=status.HTTP_400_BAD_REQUEST)
 
+        if follow_request:
+            # If the request is pending, don't allow another request to be sent
+            if follow_request.status == 'pending':
+                return Response({"error": "Follow request is already pending"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # If the request was previously accepted or canceled, update it to pending
+            follow_request.status = 'pending'
+            follow_request.save()
+            return Response({
+                "message": "Follow request re-sent successfully",
+                "data": {
+                    "user_id": str(recipient.id),
+                    "follower_id": str(requester.id),
+                    "requested_at": follow_request.created_at.isoformat()
+                }
+            }, status=status.HTTP_200_OK)
+
+        # Create a new follow request if none exists
         follow_request = FollowRequest.objects.create(requester=requester, recipient=recipient)
         return Response({
             "message": "Follow request sent successfully",
@@ -104,6 +128,7 @@ class FollowRequestViewSet(viewsets.ViewSet):
             }
         }, status=status.HTTP_201_CREATED)
 
+            
     def accept_request(self, request, user_id=None):
         recipient = request.user
         try:
@@ -125,17 +150,43 @@ class FollowRequestViewSet(viewsets.ViewSet):
         }, status=status.HTTP_200_OK)
 
     def cancel_request(self, request, user_id=None):
+        """Allows the requester to cancel a pending follow request."""
         requester = request.user
+
+        # Ensure only the requester can cancel their own follow request
         try:
-            follow_request = FollowRequest.objects.get(requester=requester, recipient_id=user_id, status='pending')
+            follow_request = FollowRequest.objects.get(
+                requester=requester, recipient_id=user_id, status='pending'
+            )
         except FollowRequest.DoesNotExist:
             return Response({"error": "Follow request not found or already handled"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Cancel the follow request if it's pending
         follow_request.status = 'cancelled'
         follow_request.save()
         return Response({
             "success": True,
             "message": "Follow request canceled."
+        }, status=status.HTTP_200_OK)
+
+    def reject_request(self, request, user_id=None):
+        """Allows the recipient to reject a pending follow request."""
+        recipient = request.user
+
+        # Ensure only the recipient can reject a follow request they received
+        try:
+            follow_request = FollowRequest.objects.get(
+                requester_id=user_id, recipient=recipient, status='pending'
+            )
+        except FollowRequest.DoesNotExist:
+            return Response({"error": "Follow request not found or already handled"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Reject the follow request if it's pending
+        follow_request.status = 'rejected'
+        follow_request.save()
+        return Response({
+            "success": True,
+            "message": "Follow request rejected."
         }, status=status.HTTP_200_OK)
 
     def unfollow(self, request, user_id=None):
@@ -187,6 +238,7 @@ class BlockViewSet(viewsets.ViewSet):
         blocker = request.user
         if int(blocker.id) == int(user_id):
             return Response({"error": "You cannot block yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
             blocked_user = User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -195,17 +247,17 @@ class BlockViewSet(viewsets.ViewSet):
         if Block.objects.filter(blocker=blocker, blocked=blocked_user).exists():
             return Response({"error": "User is already blocked"}, status=status.HTTP_400_BAD_REQUEST)
 
-        reason = request.data.get("reason", "")
-        block = Block.objects.create(blocker=blocker, blocked=blocked_user, reason=reason)
-        return Response({
-            "success": True,
-            "message": "User has been successfully blocked.",
-            "data": {
-                "blocked_user_id": str(blocked_user.id),
-                "reason": reason,
-                "blocked_at": block.blocked_at.isoformat()
-            }
-        }, status=status.HTTP_201_CREATED)
+        data = request.data.copy()
+        data['blocked'] = user_id
+        serializer = BlockSerializer(data=data)
+        if serializer.is_valid():
+            block = serializer.save(blocker=blocker)
+            return Response({
+                "success": True,
+                "message": "User has been successfully blocked.",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def unblock_user(self, request, user_id=None):
         blocker = request.user
@@ -219,3 +271,41 @@ class BlockViewSet(viewsets.ViewSet):
             "success": True,
             "message": "User unblocked successfully"
         }, status=status.HTTP_200_OK)
+
+class ReportViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def report_user(self, request, user_id=None):
+        reporter = request.user
+        if int(reporter.id) == int(user_id):
+            return Response({"error": "You cannot report yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            reported_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+        data['reported'] = user_id
+        serializer = ReportSerializer(data=data)
+        if serializer.is_valid():
+            report = serializer.save(reporter=reporter)
+            return Response({
+                "success": True,
+                "message": "User has been successfully reported.",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BlockReasonListView(APIView):
+    def get(self, request):
+        reasons = [{'code': code, 'label': label} for code, label in Block.COMMON_BLOCK_REASONS]
+        serializer = ReasonSerializer(reasons, many=True)
+        return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+
+class ReportReasonListView(APIView):
+    def get(self, request):
+        reasons = [{'code': code, 'label': label} for code, label in Report.COMMON_REPORT_REASONS]
+        serializer = ReasonSerializer(reasons, many=True)
+        return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
