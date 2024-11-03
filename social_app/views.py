@@ -9,6 +9,10 @@ from userprofile_app.models import Profile, Role
 
 User = get_user_model()
 
+def is_blocked(user, target_user):
+    """ Check if 'target_user' is blocked by 'user'. """
+    return Block.objects.filter(blocker=user, blocked=target_user).exists() or Block.objects.filter(blocker=target_user, blocked=user).exists()
+
 class ListFollowersView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -78,6 +82,13 @@ class FollowRequestViewSet(viewsets.ViewSet):
 
     def send_request(self, request, user_id=None):
         requester = request.user
+        try:
+            recipient = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_blocked(requester, recipient):
+            return Response({"error": "You cannot follow this user."}, status=status.HTTP_403_FORBIDDEN)
 
         # Prevent self-follow requests
         if int(requester.id) == int(user_id):
@@ -238,7 +249,7 @@ class BlockViewSet(viewsets.ViewSet):
         blocker = request.user
         if int(blocker.id) == int(user_id):
             return Response({"error": "You cannot block yourself."}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             blocked_user = User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -247,17 +258,31 @@ class BlockViewSet(viewsets.ViewSet):
         if Block.objects.filter(blocker=blocker, blocked=blocked_user).exists():
             return Response({"error": "User is already blocked"}, status=status.HTTP_400_BAD_REQUEST)
 
-        data = request.data.copy()
-        data['blocked'] = user_id
-        serializer = BlockSerializer(data=data)
-        if serializer.is_valid():
-            block = serializer.save(blocker=blocker)
-            return Response({
-                "success": True,
-                "message": "User has been successfully blocked.",
-                "data": serializer.data
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Remove existing follow relationship
+        Follow.objects.filter(follower=blocked_user, following=blocker).delete()
+        Follow.objects.filter(follower=blocker, following=blocked_user).delete()
+
+        # Create the block record
+        common_reason = request.data.get("common_reason")
+        reason_details = request.data.get("reason_details", "")
+        block = Block.objects.create(
+            blocker=blocker, 
+            blocked=blocked_user, 
+            common_reason=common_reason, 
+            reason_details=reason_details
+        )
+
+        return Response({
+            "success": True,
+            "message": "User has been successfully blocked.",
+            "data": {
+                "blocked_user_id": str(blocked_user.id),
+                "common_reason": common_reason,
+                "reason_details": reason_details,
+                "blocked_at": block.blocked_at.isoformat()
+            }
+        }, status=status.HTTP_201_CREATED)
+
 
     def unblock_user(self, request, user_id=None):
         blocker = request.user
