@@ -28,10 +28,8 @@ urlpatterns = [
     path('api/', include('userprofile_app.urls')),
     path('api/', include('social_app.urls')),
     path('api/', include('forms.urls')),
-    path('api/profile/', include('profile_app.urls')),
-
-    # path('api/gigwork/', include('gigwork.urls')), 
-    
+    path('api/', include('posts_app.urls')),    
+    path('api/profile/', include('profile_app.urls')),    
     ]
 
 

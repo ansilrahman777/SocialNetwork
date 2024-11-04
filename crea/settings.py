@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'social_app',
     'profile_app',
     'forms',
+    'posts_app',
 ]
 
 MIDDLEWARE = [
