@@ -1,3 +1,8 @@
+import os
+import qrcode
+from rest_framework.decorators import action
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -439,6 +444,39 @@ class ProfileViewSet(viewsets.ViewSet):
             "status": "success",
             "message": "Profile completion status retrieved successfully",
             "data": serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    @action(detail=True, methods=['get'], url_path='qr-code')
+    def generate_qr_code(self, request, pk=None):
+        """
+        Generates or retrieves a permanent QR code for the user's profile.
+        """
+        try:
+            profile = Profile.objects.get(user_id=pk)
+        except Profile.DoesNotExist:
+            return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Define the deep link URL for the user's profile
+        profile_url = f"myapp://profile/{profile.user_id}/"  # Use your app's custom scheme or frontend URL
+
+        # Define file path and name
+        qr_code_filename = f"user_{profile.user_id}_qr.png"
+        file_path = os.path.join(settings.MEDIA_ROOT, "qrcodes", qr_code_filename)
+
+        # Check if QR code file already exists, otherwise create it
+        if not os.path.exists(file_path):
+            qr_code_image = qrcode.make(profile_url)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            qr_code_image.save(file_path)
+
+        # Retrieve the QR code URL
+        fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "qrcodes"))
+        qr_code_url = fs.url(qr_code_filename)
+
+        return Response({
+            "status": "success",
+            "user_id": profile.user_id,
+            "qr_code_url": request.build_absolute_uri(qr_code_url)
         }, status=status.HTTP_200_OK)
 
 class ExperienceViewSet(viewsets.ViewSet):

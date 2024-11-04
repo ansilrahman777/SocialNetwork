@@ -30,6 +30,9 @@ urlpatterns = [
     path('profile/create/', ProfileViewSet.as_view({'post': 'create'}), name='profile-create'),
     path('profile/<int:user_id>/', ProfileViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile-detail-edit'),
     path('profile/<int:user_id>/profile-completion/', ProfileViewSet.as_view({'get': 'profile_completion'}), name='profile-completion-status'),
+    
+    #qr-code
+    path('profile/<int:pk>/qr-code/', ProfileViewSet.as_view({'get': 'generate_qr_code'}), name='profile-qr-code'),
 
     # Experience endpoints
     path('profile/experience/', ExperienceViewSet.as_view({'post': 'create'}), name='experience-add'),
@@ -51,5 +54,4 @@ urlpatterns = [
     path('profile/union-association/', UnionAssociationViewSet.as_view({'post': 'create'}), name='union-association-add'),
     path('profile/<int:user_id>/union-association/', UnionAssociationViewSet.as_view({'get': 'list'}), name='user-union-association'),
     path('profile/union-association/<int:pk>/', UnionAssociationViewSet.as_view({'patch': 'update', 'delete': 'destroy'}), name='union-association-detail'),
-
 ]
