@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from mimetypes import guess_type
 
 User = get_user_model()
+
 def sanitize_filename(filename):
     filename = re.sub(r'[\\/:*?"<>|]', '', filename)
     return filename
@@ -58,3 +59,14 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.content[:20]}"
+
+  
+class Headshot(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='headshots')
+    banner = models.ImageField(upload_to='headshots/banners/')
+    film_name = models.CharField(max_length=255)
+    role_played = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.film_name} - {self.role_played} ({self.user.username})"

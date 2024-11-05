@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Post, Like, Comment
+from .models import Headshot, Post, Like, Comment
 from userprofile_app.models import Profile
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -9,6 +9,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['username', 'profile_image']
+
 
 class PostSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(source='user.profile', read_only=True)
@@ -33,3 +34,10 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['id', 'user', 'content', 'created_at']
+
+class HeadshotSerializer(serializers.ModelSerializer):
+    user = UserProfileSerializer(source='user.profile', read_only=True)
+
+    class Meta:
+        model = Headshot
+        fields = ['id', 'user', 'banner', 'film_name', 'role_played', 'created_at']

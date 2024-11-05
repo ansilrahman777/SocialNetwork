@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PostViewSet
+from .views import HeadshotViewSet, PostViewSet
 
 urlpatterns = [
     path('profile/posts/create/', PostViewSet.as_view({'post': 'create'}), name='post-create'),
@@ -17,4 +17,8 @@ urlpatterns = [
     
     path('profile/posts/<int:pk>/', PostViewSet.as_view({'get': 'retrieve'}), name='post-detail'),
     path('profile/posts/<int:pk>/share/', PostViewSet.as_view({'get': 'share'}), name='post-share'),
+    
+    path('profile/headshots/create/', HeadshotViewSet.as_view({'post': 'create'}), name='headshot-create'),
+    path('profile/headshots/<int:pk>/', HeadshotViewSet.as_view({'get': 'retrieve'}), name='headshot-detail'),
+    path('profile/<int:user_id>/headshots/', HeadshotViewSet.as_view({'get': 'list_user_headshots'}), name='user-headshots'),
 ]
