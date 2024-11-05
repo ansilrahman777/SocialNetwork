@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Headshot, Post, Like, Comment
 from userprofile_app.models import Profile
+from .backblaze_custom_storage import CustomBackblazeStorage, custom_upload_to
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username')

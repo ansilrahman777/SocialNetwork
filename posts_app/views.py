@@ -6,6 +6,9 @@ from django.urls import reverse
 from .models import Headshot, Post, Like, Comment
 from .serializers import HeadshotSerializer, PostSerializer, LikeSerializer, CommentSerializer
 from userprofile_app.models import Profile
+from django.contrib.auth import get_user_model
+
+User = get_user_model() 
 
 class PostViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -25,23 +28,52 @@ class PostViewSet(viewsets.ViewSet):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    def list_images(self, request):
-        images = Post.objects.filter(media_type='image')
-        serializer = PostSerializer(images, many=True)
-        return Response({
-            "status": "success",
-            "message": "Images retrieved successfully",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
+    def list_images(self, request, user_id=None):
+        try:
+            user = get_object_or_404(User, pk=user_id)
+            images = Post.objects.filter(media_type='image', user=user)
+            if not images.exists():
+                return Response({
+                    "status": "error",
+                    "message": "No images found for this user."
+                }, status=status.HTTP_404_NOT_FOUND)
 
-    def list_videos(self, request):
-        videos = Post.objects.filter(media_type='video')
-        serializer = PostSerializer(videos, many=True)
-        return Response({
-            "status": "success",
-            "message": "Videos retrieved successfully",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
+            serializer = PostSerializer(images, many=True)
+            return Response({
+                "status": "success",
+                "message": "Images retrieved successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": "An error occurred while retrieving images.",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def list_videos(self, request, user_id=None):
+        try:
+            user = get_object_or_404(User, pk=user_id)
+            videos = Post.objects.filter(media_type='video', user=user)
+            if not videos.exists():
+                return Response({
+                    "status": "error",
+                    "message": "No videos found for this user."
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            serializer = PostSerializer(videos, many=True)
+            return Response({
+                "status": "success",
+                "message": "Videos retrieved successfully",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": "An error occurred while retrieving videos.",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     def like(self, request, pk=None):
         post = get_object_or_404(Post, pk=pk)

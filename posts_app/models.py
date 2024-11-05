@@ -1,46 +1,58 @@
-import os
-import re
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from mimetypes import guess_type
+from .backblaze_custom_storage import CustomBackblazeStorage, custom_upload_to 
 
 User = get_user_model()
 
-def sanitize_filename(filename):
-    filename = re.sub(r'[\\/:*?"<>|]', '', filename)
-    return filename
+def validate_media_type(file):
+    mime_type, _ = guess_type(file.name)
+    if mime_type:
+        if not (mime_type.startswith('image') or mime_type.startswith('video')):
+            raise ValidationError("Only image or video files are allowed.")
+    else:
+        raise ValidationError("Cannot determine the file type. Only images and videos are allowed.")
 
 class Post(models.Model):
     MEDIA_TYPE_CHOICES = [
         ('image', 'Image'),
         ('video', 'Video'),
     ]
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     caption = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
-    media = models.FileField(upload_to='media/')
+    media = models.FileField(
+        storage=CustomBackblazeStorage(),
+        upload_to=lambda instance, filename: custom_upload_to(instance, filename, 'posts_images') 
+                    if instance.media_type == 'image' else custom_upload_to(instance, filename, 'posts_videos'),
+        validators=[validate_media_type],
+        blank=True,
+        null=True
+    )
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, blank=True, null=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if self.media:
-            original_filename = os.path.basename(self.media.name)
-            sanitized_filename = sanitize_filename(original_filename)
-            self.media.name = os.path.join("media", sanitized_filename)
-        # Determine media type based on file MIME type
+        if not self.media:
+            raise ValidationError("A media file (image or video) is required.")
+        
         mime_type, _ = guess_type(self.media.name)
         if mime_type:
             if mime_type.startswith('image'):
                 self.media_type = 'image'
             elif mime_type.startswith('video'):
                 self.media_type = 'video'
+            else:
+                raise ValidationError("Only image or video files are allowed.")
+        else:
+            raise ValidationError("Cannot determine the file type. Only images and videos are allowed.")
+
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.username} - {self.caption[:20]}"
-
 
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes')
@@ -49,7 +61,6 @@ class Like(models.Model):
 
     class Meta:
         unique_together = ('user', 'post')
-
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
@@ -60,10 +71,13 @@ class Comment(models.Model):
     def __str__(self):
         return f"{self.user.username}: {self.content[:20]}"
 
-  
 class Headshot(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='headshots')
-    banner = models.ImageField(upload_to='headshots/banners/')
+    banner = models.ImageField(
+        storage=CustomBackblazeStorage(),
+        upload_to=lambda instance, filename: custom_upload_to(instance, filename, 'headshots'),
+        validators=[validate_media_type]
+    )
     film_name = models.CharField(max_length=255)
     role_played = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)

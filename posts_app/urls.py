@@ -4,8 +4,8 @@ from .views import HeadshotViewSet, PostViewSet
 urlpatterns = [
     path('profile/posts/create/', PostViewSet.as_view({'post': 'create'}), name='post-create'),
     
-    path('profile/posts/images/', PostViewSet.as_view({'get': 'list_images'}), name='post-images'),
-    path('profile/posts/videos/', PostViewSet.as_view({'get': 'list_videos'}), name='post-videos'),
+    path('profile/<int:user_id>/posts/images/', PostViewSet.as_view({'get': 'list_images'}), name='user-post-images'),
+    path('profile/<int:user_id>/posts/videos/', PostViewSet.as_view({'get': 'list_videos'}), name='user-post-videos'),
     
     path('profile/posts/<int:pk>/like/', PostViewSet.as_view({'post': 'like'}), name='post-like'),
     path('profile/posts/<int:pk>/unlike/', PostViewSet.as_view({'delete': 'unlike'}), name='post-unlike'),
