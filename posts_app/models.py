@@ -1,9 +1,14 @@
-from django.db import models
-from django.conf import settings
+import os
+import re
 from django.utils import timezone
+from django.db import models
+from django.contrib.auth import get_user_model
 from mimetypes import guess_type
 
-User = settings.AUTH_USER_MODEL
+User = get_user_model()
+def sanitize_filename(filename):
+    filename = re.sub(r'[\\/:*?"<>|]', '', filename)
+    return filename
 
 class Post(models.Model):
     MEDIA_TYPE_CHOICES = [
@@ -19,6 +24,11 @@ class Post(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
+        if self.media:
+            original_filename = os.path.basename(self.media.name)
+            sanitized_filename = sanitize_filename(original_filename)
+            self.media.name = os.path.join("media", sanitized_filename)
+        # Determine media type based on file MIME type
         mime_type, _ = guess_type(self.media.name)
         if mime_type:
             if mime_type.startswith('image'):

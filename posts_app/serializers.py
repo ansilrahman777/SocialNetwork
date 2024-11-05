@@ -21,14 +21,14 @@ class PostSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'media_type', 'created_at']
 
 class LikeSerializer(serializers.ModelSerializer):
-    user = UserProfileSerializer(read_only=True)
+    user = UserProfileSerializer(source='user.profile', read_only=True)
 
     class Meta:
         model = Like
         fields = ['id', 'user', 'created_at']
 
 class CommentSerializer(serializers.ModelSerializer):
-    user = UserProfileSerializer(read_only=True)
+    user = UserProfileSerializer(source='user.profile', read_only=True)
 
     class Meta:
         model = Comment

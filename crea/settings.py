@@ -200,7 +200,7 @@ END_POINT_URL = "s3.us-east-005.backblazeb2.com"
 # DEFAULT_FILE_STORAGE = 'storages.backends.b2.B2Storage'
 
 # Optional: Define your B2 file path if needed
-DEFAULT_FILE_STORAGE = 'crea_app.backblaze_storage.BackblazeStorage'
+# DEFAULT_FILE_STORAGE = 'crea_app.backblaze_storage.BackblazeStorage'
 
 DJANGO_SETTINGS_MODULE='crea.settings'
 

@@ -15,5 +15,6 @@ urlpatterns = [
     path('profile/posts/<int:pk>/comments/', PostViewSet.as_view({'get': 'list_comments'}), name='post-list-comments'),
     path('profile/posts/<int:pk>/likes/', PostViewSet.as_view({'get': 'list_likes'}), name='post-list-likes'),
     
+    path('profile/posts/<int:pk>/', PostViewSet.as_view({'get': 'retrieve'}), name='post-detail'),
     path('profile/posts/<int:pk>/share/', PostViewSet.as_view({'get': 'share'}), name='post-share'),
 ]

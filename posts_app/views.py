@@ -5,20 +5,19 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from .models import Post, Like, Comment
 from .serializers import PostSerializer, LikeSerializer, CommentSerializer
+from userprofile_app.models import Profile
 
 class PostViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def create(self, request):
-        data = request.data.copy()
-        data['user'] = request.user.id
-        serializer = PostSerializer(data=data)
+        serializer = PostSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            post = serializer.save(user=request.user)
             return Response({
                 "status": "success",
                 "message": "Post created successfully",
-                "data": serializer.data
+                "data": PostSerializer(post).data
             }, status=status.HTTP_201_CREATED)
         return Response({
             "status": "error",
@@ -67,16 +66,16 @@ class PostViewSet(viewsets.ViewSet):
 
     def comment(self, request, pk=None):
         data = request.data.copy()
-        data['user'] = request.user.id
-        data['post'] = pk
-        serializer = CommentSerializer(data=data)
+        data['post'] = pk  
+        serializer = CommentSerializer(data=data, context={'request': request})
+        
         if serializer.is_valid():
-            serializer.save()
+            comment = serializer.save(user=request.user, post=Post.objects.get(id=pk))
             return Response({
                 "status": "success",
                 "message": "Comment added successfully",
-                "data": serializer.data
-            }, status=status.HTTP_201_CREATED)
+                "data": CommentSerializer(comment).data
+            }, status=status.HTTP_201_CREATED)    
         return Response({
             "status": "error",
             "message": "Failed to add comment",
@@ -91,18 +90,9 @@ class PostViewSet(viewsets.ViewSet):
             "message": "Comment deleted"
         }, status=status.HTTP_200_OK)
 
-    def share(self, request, pk=None):
-        post = get_object_or_404(Post, pk=pk)
-        share_link = request.build_absolute_uri(reverse('post-detail', args=[pk]))
-        return Response({
-            "status": "success",
-            "message": "Share link generated",
-            "share_link": share_link
-        }, status=status.HTTP_200_OK)
-
     def list_comments(self, request, pk=None):
         post = get_object_or_404(Post, pk=pk)
-        comments = Comment.objects.filter(post=post)
+        comments = post.comments.all()
         serializer = CommentSerializer(comments, many=True)
         return Response({
             "status": "success",
@@ -112,10 +102,36 @@ class PostViewSet(viewsets.ViewSet):
 
     def list_likes(self, request, pk=None):
         post = get_object_or_404(Post, pk=pk)
-        likes = Like.objects.filter(post=post)
+        likes = post.likes.all()
         serializer = LikeSerializer(likes, many=True)
         return Response({
             "status": "success",
             "message": "Likes retrieved successfully",
             "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, pk=None):
+        """
+        View to retrieve details of a single post.
+        """
+        post = get_object_or_404(Post, pk=pk)
+        serializer = PostSerializer(post)
+        return Response({
+            "status": "success",
+            "message": "Post details retrieved successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def share(self, request, pk=None):
+        """
+        View to generate a shareable link for a specific post.
+        """
+        post = get_object_or_404(Post, pk=pk)
+        username = post.user.username  # Assuming Post model has a user relationship
+        # Generate the link to the post detail view
+        share_link = f"{request.build_absolute_uri(reverse('post-detail', args=[pk]))}?user={username}"
+        return Response({
+            "status": "success",
+            "message": "Share link generated",
+            "share_link": share_link
         }, status=status.HTTP_200_OK)
