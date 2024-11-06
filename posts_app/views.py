@@ -100,7 +100,7 @@ class PostViewSet(viewsets.ViewSet):
         data = request.data.copy()
         data['post'] = pk  
         serializer = CommentSerializer(data=data, context={'request': request})
-        
+               
         if serializer.is_valid():
             comment = serializer.save(user=request.user, post=Post.objects.get(id=pk))
             return Response({
@@ -200,7 +200,7 @@ class HeadshotViewSet(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            headshot = get_object_or_404(Headshot, pk=pk, user=request.user)
+            headshot = get_object_or_404(Headshot, pk=pk)
             serializer = HeadshotSerializer(headshot)
             return Response({
                 "status": "success",
