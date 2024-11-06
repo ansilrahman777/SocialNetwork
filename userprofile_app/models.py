@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from posts_app.backblaze_custom_storage import CustomBackblazeStorage, profile_image_upload_to, cover_image_upload_to, document_upload_to
 
 User = get_user_model()
 
@@ -61,8 +62,20 @@ class Profile(models.Model):
     selected_primary_industry = models.ForeignKey(Industry, related_name='primary_industry', on_delete=models.SET_NULL, null=True, blank=True)
     selected_skills = models.ManyToManyField(Skill, blank=True)
     selected_primary_skill = models.ForeignKey(Skill, related_name='primary_skill', on_delete=models.SET_NULL, null=True, blank=True)
-    cover_image = models.URLField(null=True, blank=True)
-    profile_image = models.URLField(null=True, blank=True)
+    
+    cover_image = models.FileField(
+        storage=CustomBackblazeStorage(),
+        upload_to=cover_image_upload_to,
+        blank=True,
+        null=True
+    )
+    profile_image = models.FileField(
+        storage=CustomBackblazeStorage(),
+        upload_to=profile_image_upload_to,
+        blank=True,
+        null=True
+    )
+    
     bio = models.TextField(null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     age = models.IntegerField(null=True, blank=True)
@@ -71,8 +84,8 @@ class Profile(models.Model):
     weight = models.CharField(max_length=10, null=True, blank=True)
     view_count = models.PositiveIntegerField(default=0)
     is_verified = models.BooleanField(default=False) 
-    
-    def __str__(self):
+
+    def __str__(self): 
         return f"Profile of {self.user.mobile_or_email}"
 
     def get_status_color(self, percentage):
@@ -244,7 +257,12 @@ class DLVerification(models.Model):
     
 class DocumentUpload(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    file = models.FileField(upload_to='uploads/documents/')
+    file = models.FileField(
+        storage=CustomBackblazeStorage(),
+        upload_to=document_upload_to,
+        blank=True,
+        null=True
+    )
     upload_status = models.CharField(max_length=50, default="Document pending")
     verify_status = models.IntegerField(default=1)  # 1 = Pending, 2 = Verified, etc.
     uploaded_at = models.DateTimeField(auto_now_add=True)

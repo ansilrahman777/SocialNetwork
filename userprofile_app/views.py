@@ -10,6 +10,7 @@ from rest_framework.exceptions import ValidationError
 from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Education, UnionAssociation
 from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCompletionStatusSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer, UnionAssociationSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from posts_app.backblaze_custom_storage import CustomBackblazeStorage
 
 User = get_user_model()
 
@@ -397,7 +398,6 @@ class ProfileViewSet(viewsets.ViewSet):
 
         viewer = request.user
         if viewer.is_authenticated and viewer.id != profile.user.id:
-            # Check if the viewer has already viewed the profile
             if not ProfileView.objects.filter(profile=profile, viewer=viewer).exists():
                 ProfileView.objects.create(profile=profile, viewer=viewer)
                 profile.view_count += 1
@@ -451,32 +451,44 @@ class ProfileViewSet(viewsets.ViewSet):
         """
         Generates or retrieves a permanent QR code for the user's profile.
         """
-        try:
-            profile = Profile.objects.get(user_id=pk)
-        except Profile.DoesNotExist:
+        profile = get_profile(pk)
+        if not profile:
             return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Define the deep link URL for the user's profile
-        profile_url = f"myapp://profile/{profile.user_id}/"  # Use your app's custom scheme or frontend URL
+        profile_url = f"myapp://profile/{profile.user_id}/"  # Use app's custom scheme
 
-        # Define file path and name
-        qr_code_filename = f"user_{profile.user_id}_qr.png"
-        file_path = os.path.join(settings.MEDIA_ROOT, "qrcodes", qr_code_filename)
+        qr_code_filename = f"user_{profile.user.username}_qr.png"
+        qr_code_path = f"user/{profile.user.id}_{profile.user.username}/qr/{qr_code_filename}"
 
-        # Check if QR code file already exists, otherwise create it
-        if not os.path.exists(file_path):
+        storage = CustomBackblazeStorage()
+
+        # Check if the QR code already exists on Backblaze
+        if storage.exists(qr_code_path):
+            # Retrieve the QR code URL
+            qr_code_url = storage.url(qr_code_path)
+        else:
+            # Generate the QR code image in memory
             qr_code_image = qrcode.make(profile_url)
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            qr_code_image.save(file_path)
+            from io import BytesIO
+            image_file = BytesIO()
+            qr_code_image.save(image_file, format='PNG')
+            image_file.seek(0)  # Move cursor to start of file
 
-        # Retrieve the QR code URL
-        fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "qrcodes"))
-        qr_code_url = fs.url(qr_code_filename)
+            # Upload QR code image to Backblaze in the user's folder
+            try:
+                storage.save(qr_code_path, image_file)
+                qr_code_url = storage.url(qr_code_path)
+            except Exception as e:
+                return Response({
+                    "status": "error",
+                    "message": "Failed to save QR code.",
+                    "details": str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
             "status": "success",
             "user_id": profile.user_id,
-            "qr_code_url": request.build_absolute_uri(qr_code_url)
+            "qr_code_url": qr_code_url
         }, status=status.HTTP_200_OK)
 
 class ExperienceViewSet(viewsets.ViewSet):
@@ -696,7 +708,7 @@ class DocumentUploadView(viewsets.ViewSet):
                 "status": "success",
                 "message": "File uploaded successfully",
                 "data": {
-                    "status": "Document pending",
+                    "status": "Verification pending",
                     "file_url": serializer.instance.file.url,
                     "verify_status": 1
                 }
