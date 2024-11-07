@@ -29,7 +29,7 @@ urlpatterns = [
     path('api/', include('social_app.urls')),
     path('api/', include('forms.urls')),
     path('api/', include('posts_app.urls')),    
-    path('api/profile/', include('profile_app.urls')),    
+    path('api/', include('save_app.urls')),    
     ]
 
 

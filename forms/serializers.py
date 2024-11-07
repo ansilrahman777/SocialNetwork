@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import GigWork, CastingCall, Project, PostFeed
+from .models import GigWork, CastingCall, Project
 from rest_framework import serializers
 from .models import Internship, Apprenticeship, EventRegistration, BankDetails, Uploads, EventDetails
 
@@ -53,19 +53,6 @@ class ProjectSerializer(serializers.ModelSerializer):
         return project
 
 
-
-class PostFeedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostFeed
-        fields = ['id', 'user', 'media_file', 'description', 'created_at']
-        read_only_fields = ['user', 'created_at']
-
-    def create(self, validated_data):
-        """Automatically assign the logged-in user to the post."""
-        user = self.context['request'].user
-        validated_data['user'] = user
-        return PostFeed.objects.create(**validated_data)
-    
 class BankDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankDetails

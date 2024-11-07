@@ -35,6 +35,12 @@ class GigWork(models.Model):
         ('premium', 'Premium'),
         ('featured', 'Featured'),
     ]
+    
+    PROGRESS_CHOICES = [
+        ('planned', 'Planned'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+    ]
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     work_type = models.CharField(max_length=50, choices=WORK_TYPE_CHOICES)
@@ -46,7 +52,7 @@ class GigWork(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     price_type = models.CharField(max_length=50, choices=PRICE_TYPE_CHOICES)
     skills = models.JSONField()  # Store skills as a list
-    progress_of_project = models.CharField(max_length=50)  # e.g., planned, ongoing, completed
+    progress_of_project = models.CharField(max_length=50 ,choices=PROGRESS_CHOICES)
     work_method = models.CharField(max_length=50, choices=WORK_METHOD_CHOICES)
     promotion = models.CharField(max_length=50, choices=PROMOTION_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -54,7 +60,6 @@ class GigWork(models.Model):
 
     def __str__(self):
         return self.gig_title
-
 
 # Casting Call Model
 class CastingCall(models.Model):
@@ -108,16 +113,6 @@ class Project(models.Model):
     def __str__(self):
         return self.project_title
 
-
-class PostFeed(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  
-    media_file = models.FileField(upload_to='media/')
-    description = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Post by {self.user.username} on {self.created_at}"
-
 class BankDetails(models.Model):
     beneficiary_name = models.CharField(max_length=100)
     bank_name = models.CharField(max_length=100)
@@ -166,8 +161,6 @@ class EventRegistration(models.Model):
     def __str__(self):
         return f"{self.organization_name} - {self.event_details.event_title}"
     
-    
-
 class Internship(models.Model):
     USER_METHOD_CHOICES = [
         ('individual', 'Individual'),

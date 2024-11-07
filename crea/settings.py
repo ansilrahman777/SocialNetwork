@@ -52,9 +52,9 @@ INSTALLED_APPS = [
     'b2sdk',
     'userprofile_app',
     'social_app',
-    'profile_app',
     'forms',
     'posts_app',
+    'save_app',
 ]
 
 MIDDLEWARE = [

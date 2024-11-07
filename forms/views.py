@@ -5,8 +5,8 @@ from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth import get_user_model
-from .models import PostFeed,GigWork,CastingCall,Project
-from .serializers import GigWorkSerializer, CastingCallSerializer, ProjectSerializer, PostFeedSerializer
+from .models import GigWork,CastingCall,Project
+from .serializers import GigWorkSerializer, CastingCallSerializer, ProjectSerializer
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -20,6 +20,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 CustomUser = get_user_model()
 
+# ----------------------------
+# GigWork View
+# ----------------------------
 class GigWorkFormView(APIView):
     permission_classes = [IsAuthenticated]  
     authentication_classes = [JWTAuthentication]
@@ -86,7 +89,9 @@ class GigWorkFormView(APIView):
         except GigWork.DoesNotExist:
             return Response({"message": "Gig work not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    
+# ----------------------------
+# CastingCall View
+# ----------------------------   
 class CastingCallFormView(APIView):
     permission_classes = [IsAuthenticated]  
     authentication_classes = [JWTAuthentication]
@@ -154,7 +159,9 @@ class CastingCallFormView(APIView):
         except CastingCall.DoesNotExist:
             return Response({"message": "Casting call not found."}, status=status.HTTP_404_NOT_FOUND)
 
-
+# ----------------------------
+# Project View
+# ----------------------------
 class ProjectFormView(APIView):
     permission_classes = [IsAuthenticated]  
     authentication_classes = [JWTAuthentication]
@@ -218,73 +225,6 @@ class ProjectFormView(APIView):
         except Project.DoesNotExist:
             return Response({"message": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
 
-
-
-class PostFeedView(generics.CreateAPIView):
-    queryset = PostFeed.objects.all()
-    serializer_class = PostFeedSerializer
-    permission_classes = [IsAuthenticated]  
-    authentication_classes = [JWTAuthentication] # Ensure TokenAuthentication is used
-    parser_classes = [MultiPartParser, FormParser]
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        
-        post = serializer.save()  # Automatically associates the post with the logged-in user
-        media_url = request.build_absolute_uri(post.media_file.url) if post.media_file else None
-        media_type = "video" if post.media_file.name.endswith(('.mp4', '.mov')) else "image"
-
-        return Response({
-            "status": {
-                "type": "success",
-                "message": "Post created successfully",
-                "code": 201,
-                "error": False
-            },
-            "data": {
-                "post_id": post.id,
-                "user_id": post.user.id,
-                "media_url": media_url,
-                "description": post.description,
-                "created_at": post.created_at.isoformat(),
-                "submission_status": "Submitted Live or Save as a Draft",
-                "media_type": media_type
-            }
-        }, status=status.HTTP_201_CREATED)
-
-
-    def get(self, request, pk=None):
-        if pk:
-            try:
-                post = PostFeed.objects.get(pk=pk)
-                serializer = PostFeedSerializer(post)
-                return Response({"data": serializer.data}, status=status.HTTP_200_OK)
-            except PostFeed.DoesNotExist:
-                return Response({"message": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        posts = PostFeed.objects.all()
-        serializer = PostFeedSerializer(posts, many=True)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
-
-    def put(self, request, pk):
-        try:
-            post = PostFeed.objects.get(pk=pk)
-            serializer = PostFeedSerializer(post, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({"message": "Post updated successfully."}, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except PostFeed.DoesNotExist:
-            return Response({"message": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    def delete(self, request, pk):
-        try:
-            post = PostFeed.objects.get(pk=pk)
-            post.delete()
-            return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-        except PostFeed.DoesNotExist:
-            return Response({"message": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
 # ----------------------------
 # Internship View
