@@ -2,28 +2,28 @@ from rest_framework import serializers
 from .models import SavedArtist, SavedPost
 from posts_app.models import Post
 from userprofile_app.models import Profile
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username')
-    profile_image = serializers.URLField()
-
-    class Meta:
-        model = Profile
-        fields = ['username', 'profile_image']
         
 class ArtistProfileSerializer(serializers.ModelSerializer):
     artist_id = serializers.CharField(source='user.id', read_only=True)
     artist_name = serializers.CharField(source='user.username', read_only=True)
-    profile_image = serializers.URLField()
-    role = serializers.CharField(source='selected_role.role_name', read_only=True)
-    skills = serializers.SerializerMethodField()
+    profile_image = serializers.SerializerMethodField()
+    cover_image = serializers.SerializerMethodField() 
+    # role = serializers.CharField(source='selected_role.role_name', read_only=True)
+    # skills = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ['artist_id', 'artist_name', 'profile_image', 'role', 'skills']
+        fields = ['artist_id', 'artist_name', 'profile_image', 'cover_image']
 
-    def get_skills(self, obj):
-        return [skill.name for skill in obj.selected_skills.all()]
+    def get_profile_image(self, obj):
+        if obj.profile_image:
+            return obj.profile_image.url
+        return None
+
+    def get_cover_image(self, obj):
+        if obj.cover_image:
+            return obj.cover_image.url
+        return None
 
 class SavedArtistSerializer(serializers.ModelSerializer):
     saved_id = serializers.IntegerField(source='id', read_only=True)
@@ -35,7 +35,7 @@ class SavedArtistSerializer(serializers.ModelSerializer):
         fields = ['saved_id', 'artist_details', 'saved_at']
 
 class PostSerializer(serializers.ModelSerializer):
-    user = UserProfileSerializer(source='user.profile', read_only=True)
+    user = ArtistProfileSerializer(source='user.profile', read_only=True)
     likes_count = serializers.IntegerField(source='likes.count', read_only=True)
     comments_count = serializers.IntegerField(source='comments.count', read_only=True)
     post_id = serializers.IntegerField(source='id', read_only=True)
