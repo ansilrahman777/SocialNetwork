@@ -5,6 +5,7 @@ import b2sdk.v2 as b2
 from django.conf import settings
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
+from django.utils.text import slugify
 
 def sanitize_filename(filename):
     """Sanitize filenames by removing invalid characters and enforce forward slashes."""
@@ -57,7 +58,7 @@ class CustomBackblazeStorage(Storage):
 
     def url(self, name):
         """Get the URL for accessing a file in Backblaze B2."""
-        return f"https://{settings.B2_BUCKET_NAME}.{settings.END_POINT_URL}/{name.replace('\\', '/')}"
+        return f"https://{settings.B2_BUCKET_NAME}.{settings.END_POINT_URL}/{name.replace(name, '')}"
 
     def delete(self, name):
         """Delete a file from Backblaze B2 storage."""
@@ -98,3 +99,16 @@ def cover_image_upload_to(instance, filename):
 
 def document_upload_to(instance, filename):
     return custom_upload_to(instance, filename, 'documents')
+
+# def project_upload_to(instance, filename):
+#     project_title_slug = slugify(instance.project.project_title)
+    
+#     extension = os.path.splitext(filename)[1].lower()
+#     if extension in ['.jpg', '.jpeg', '.png', '.gif']:
+#         folder = 'images'
+#     elif extension in ['.mp4', '.avi', '.mov']:
+#         folder = 'videos'
+#     else:
+#         folder = 'others'
+    
+#     return f'projects/{project_title_slug}/{folder}/{filename}'

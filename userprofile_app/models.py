@@ -238,7 +238,7 @@ class PassportVerification(models.Model):
     ps_dateexp = models.DateField()
     mobile_or_email = models.EmailField()
     status = models.CharField(max_length=20, default="Document pending")
-    verify_status = models.CharField(max_length=2, default="2")
+    verify_status = models.CharField(max_length=2, default="1")
 
     def __str__(self):
         return f"Passport Verification for {self.user}"
@@ -249,8 +249,8 @@ class DLVerification(models.Model):
     dl_fname = models.CharField(max_length=100)
     dl_isscstate = models.CharField(max_length=100)
     mobile_or_email = models.EmailField()
-    status = models.CharField(max_length=20, default="Verification Completed")
-    verify_status = models.CharField(max_length=2, default="3")
+    status = models.CharField(max_length=20, default="Document pending")
+    verify_status = models.CharField(max_length=2, default="1")
 
     def __str__(self):
         return f"DL Verification for {self.user}"

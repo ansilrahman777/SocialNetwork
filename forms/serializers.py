@@ -1,7 +1,7 @@
+import os
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import GigWork, CastingCall, Project
-from rest_framework import serializers
 from .models import Internship, Apprenticeship, EventRegistration, BankDetails, Uploads, EventDetails
 
 
@@ -58,9 +58,6 @@ class BankDetailsSerializer(serializers.ModelSerializer):
         model = BankDetails
         fields = '__all__'
 
-import os
-from rest_framework import serializers
-
 class UploadsSerializer(serializers.ModelSerializer):
     pan_card = serializers.FileField()
     cancelled_cheque = serializers.FileField()
@@ -97,8 +94,6 @@ class EventDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventDetails
         fields = '__all__'
-from rest_framework import serializers
-from .models import EventRegistration, BankDetails, Uploads, EventDetails
 
 class EventRegistrationSerializer(serializers.ModelSerializer):
     bank_details = BankDetailsSerializer()
