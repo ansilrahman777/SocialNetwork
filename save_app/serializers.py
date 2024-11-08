@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SavedPost
+from .models import SavedArtist, SavedPost
 from posts_app.models import Post
 from userprofile_app.models import Profile
 
@@ -10,6 +10,29 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['username', 'profile_image']
+        
+class ArtistProfileSerializer(serializers.ModelSerializer):
+    artist_id = serializers.CharField(source='user.id', read_only=True)
+    artist_name = serializers.CharField(source='user.username', read_only=True)
+    profile_image = serializers.URLField()
+    role = serializers.CharField(source='selected_role.role_name', read_only=True)
+    skills = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ['artist_id', 'artist_name', 'profile_image', 'role', 'skills']
+
+    def get_skills(self, obj):
+        return [skill.name for skill in obj.selected_skills.all()]
+
+class SavedArtistSerializer(serializers.ModelSerializer):
+    saved_id = serializers.IntegerField(source='id', read_only=True)
+    artist_details = ArtistProfileSerializer(source='artist_profile', read_only=True)
+    saved_at = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = SavedArtist
+        fields = ['saved_id', 'artist_details', 'saved_at']
 
 class PostSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(source='user.profile', read_only=True)
