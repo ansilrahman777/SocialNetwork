@@ -391,12 +391,14 @@ class ProfileViewSet(viewsets.ViewSet):
             return Response({
                 "status": "success",
                 "message": "Profile created successfully",
+                "error": False,
                 "data": serializer.data
             }, status=status.HTTP_201_CREATED)
         
         return Response({
             "status": "error",
             "message": "Profile creation failed due to invalid data.",
+            "error": True,
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
