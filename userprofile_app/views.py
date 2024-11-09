@@ -363,17 +363,27 @@ class ProfileViewSet(viewsets.ViewSet):
         if not profile:
             return Response({"status": "error", "message": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Prepare data dictionary for partial update
         data = {
             "user_type": request.data.get('user_type', profile.user_type or "2"),
             "bio": request.data.get('bio', profile.bio),
-            "cover_image": request.data.get('cover_image', profile.cover_image),
-            "profile_image": request.data.get('profile_image', profile.profile_image),
             "date_of_birth": request.data.get('date_of_birth', profile.date_of_birth),
             "age": request.data.get('age', profile.age),
             "location": request.data.get('location', profile.location),
             "height": request.data.get('height', profile.height),
             "weight": request.data.get('weight', profile.weight),
         }
+
+        # Only include file fields if they're valid files in the request data
+        if 'cover_image' in request.FILES:
+            data['cover_image'] = request.FILES['cover_image']
+        elif 'cover_image' in request.data and request.data.get('cover_image') is None:
+            data['cover_image'] = None
+        
+        if 'profile_image' in request.FILES:
+            data['profile_image'] = request.FILES['profile_image']
+        elif 'profile_image' in request.data and request.data.get('profile_image') is None:
+            data['profile_image'] = None
 
         serializer = ProfileCreateSerializer(profile, data=data, partial=True)
         if serializer.is_valid():
@@ -389,6 +399,7 @@ class ProfileViewSet(viewsets.ViewSet):
             "message": "Profile creation failed due to invalid data.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
 
     def retrieve(self, request, user_id=None):
         profile = get_profile(user_id)

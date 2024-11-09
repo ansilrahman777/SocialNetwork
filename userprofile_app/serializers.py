@@ -62,7 +62,6 @@ class EducationSerializer(serializers.ModelSerializer):
         
         return data
 
-# Profile Create Serializer with Validation
 class ProfileCreateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     mobile_or_email = serializers.CharField(source='user.mobile_or_email', read_only=True)
@@ -70,6 +69,8 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
     selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), required=True)
     selected_primary_industry = serializers.PrimaryKeyRelatedField(queryset=Industry.objects.all(), required=False, allow_null=True)
     selected_primary_skill = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), required=False, allow_null=True)
+    cover_image = serializers.FileField(required=False, allow_null=True)
+    profile_image = serializers.FileField(required=False, allow_null=True)
     completion_percentage = serializers.SerializerMethodField()
 
     class Meta:
@@ -83,22 +84,25 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
 
     def get_completion_percentage(self, obj):
         return obj.calculate_section_completion()
-
-    def validate_age(self, value):
-        if value < 0:
-            raise serializers.ValidationError("Age must be a positive number.")
+    
+    def validate_cover_image(self, value):
+        if value and not hasattr(value, 'size'):
+            raise serializers.ValidationError("The cover_image provided is not a valid file.")
         return value
 
-    def validate_height(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Height must be a positive number.")
+    def validate_profile_image(self, value):
+        if value and not hasattr(value, 'size'):
+            raise serializers.ValidationError("The profile_image provided is not a valid file.")
         return value
 
-    def validate_weight(self, value):
-        if value is not None:
-            if not (value.endswith('kg') or value.endswith('lbs')):
-                raise serializers.ValidationError("Weight must be in 'kg' or 'lbs'.")
-        return value
+    def update(self, instance, validated_data):
+        # Only delete the file if the field is set to None in the request and it currently has a file
+        if 'profile_image' in validated_data and validated_data['profile_image'] is None and instance.profile_image:
+            instance.profile_image.delete(save=False)  # Remove the file if set to null
+        if 'cover_image' in validated_data and validated_data['cover_image'] is None and instance.cover_image:
+            instance.cover_image.delete(save=False)
+        
+        return super().update(instance, validated_data)
     
 class ProfileCompletionStatusSerializer(serializers.Serializer):
     totalCompletion = serializers.DictField()
