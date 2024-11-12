@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    DocumentUploadView, DocumentVerificationViewSet, ProfileViewSet, RoleListView, RoleSelectionView, IndustryListView, IndustrySelectionView,
+    DocumentUploadView, DocumentVerificationViewSet, HelpOptionsView, ProfileViewSet, RoleListView, RoleSelectionView, IndustryListView, IndustrySelectionView,
     PrimaryIndustrySelectionView, SkillListView, SkillSelectionView,
     PrimarySkillSelectionView,
     ExperienceViewSet, EducationViewSet, UnionAssociationViewSet
@@ -54,4 +54,6 @@ urlpatterns = [
     path('profile/union-association/', UnionAssociationViewSet.as_view({'post': 'create'}), name='union-association-add'),
     path('profile/<int:user_id>/union-association/', UnionAssociationViewSet.as_view({'get': 'list'}), name='user-union-association'),
     path('profile/union-association/<int:pk>/', UnionAssociationViewSet.as_view({'patch': 'update', 'delete': 'destroy'}), name='union-association-detail'),
+    
+    path('profile/help/', HelpOptionsView.as_view(), name='help-options'),
 ]

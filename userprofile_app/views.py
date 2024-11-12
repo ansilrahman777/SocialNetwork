@@ -11,6 +11,7 @@ from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Edu
 from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCompletionStatusSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer, UnionAssociationSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from posts_app.backblaze_custom_storage import CustomBackblazeStorage
+from rest_framework.views import APIView
 
 User = get_user_model()
 
@@ -806,3 +807,25 @@ class UnionAssociationViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
         except UnionAssociation.DoesNotExist:
             return Response({"error": "Union/Association not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+class HelpOptionsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            options = [
+                "Get me more opportunities",
+                "Need to network",
+                "I am here to hire"
+            ]
+            return Response({
+                "status": "success",
+                "message": "Help options retrieved successfully.",
+                "data": options
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": "An error occurred while retrieving help options.",
+                "errors": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
