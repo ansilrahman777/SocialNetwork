@@ -702,17 +702,19 @@ class DocumentVerificationViewSet(viewsets.ViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
         
 class DocumentUploadView(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def create(self, request):
-        user = request.user
+        user_id = request.data.get('user_id')
         file = request.FILES.get('file')
 
-        if not file:
-            return Response({"error": "File is required."},status=status.HTTP_400_BAD_REQUEST)
+        if not user_id:
+            return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        if not file:
+            return Response({"error": "File is required."}, status=status.HTTP_400_BAD_REQUEST)
         data = {
-            "user": user.id,
+            "user": user_id,
             "file": file
         }
         serializer = DocumentUploadSerializer(data=data)
@@ -727,7 +729,6 @@ class DocumentUploadView(viewsets.ViewSet):
                     "verify_status": 1
                 }
             }, status=status.HTTP_200_OK)
-        
         return Response({
             "status": "error",
             "message": "File upload failed",
@@ -809,7 +810,7 @@ class UnionAssociationViewSet(viewsets.ViewSet):
             return Response({"error": "Union/Association not found."}, status=status.HTTP_404_NOT_FOUND)
         
 class HelpOptionsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     
     def get(self, request):
         try:
