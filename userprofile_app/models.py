@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from posts_app.backblaze_custom_storage import CustomBackblazeStorage, profile_image_upload_to, cover_image_upload_to, document_upload_to
+from social_app.models import Follow
 
 User = get_user_model()
 
@@ -87,6 +88,14 @@ class Profile(models.Model):
 
     def __str__(self): 
         return f"Profile of {self.user.mobile_or_email}"
+    
+    @property
+    def followers_count(self):
+        return Follow.objects.filter(following=self.user).count()
+
+    @property
+    def following_count(self):
+        return Follow.objects.filter(follower=self.user).count()
 
     def get_status_color(self, percentage):
         if percentage <= 25:

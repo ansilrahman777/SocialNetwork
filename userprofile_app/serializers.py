@@ -72,15 +72,23 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
     cover_image = serializers.FileField(required=False, allow_null=True)
     profile_image = serializers.FileField(required=False, allow_null=True)
     completion_percentage = serializers.SerializerMethodField()
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = [
             'id', 'username', 'mobile_or_email', 'user_type', 'selected_role', 'selected_primary_industry',
             'selected_primary_skill', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age',
-            'location', 'height', 'weight', 'view_count', 'is_verified', 'completion_percentage'
+            'location', 'height', 'weight', 'view_count','followers_count', 'following_count', 'is_verified', 'completion_percentage'
         ]
         read_only_fields = ['id', 'user', 'view_count', 'is_verified', 'completion_percentage']
+        
+    def get_followers_count(self, obj):
+        return obj.followers_count
+
+    def get_following_count(self, obj):
+        return obj.following_count
 
     def get_completion_percentage(self, obj):
         return obj.calculate_section_completion()
