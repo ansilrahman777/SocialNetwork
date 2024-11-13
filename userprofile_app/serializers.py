@@ -110,9 +110,15 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     mobile_or_email = serializers.CharField(source='user.mobile_or_email', read_only=True)
     user_type = serializers.ChoiceField(choices=[('1', 'Admin'), ('2', 'Regular User')], default="2")
+    
     selected_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), required=True)
     selected_primary_industry = serializers.PrimaryKeyRelatedField(queryset=Industry.objects.all(), required=False, allow_null=True)
     selected_primary_skill = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), required=False, allow_null=True)
+    
+    role_name = serializers.CharField(source='selected_role.role_name', read_only=True)
+    primary_industry_name = serializers.CharField(source='selected_primary_industry.name', read_only=True)
+    primary_skill_name = serializers.CharField(source='selected_primary_skill.name', read_only=True)
+    
     cover_image = serializers.FileField(required=False, allow_null=True)
     profile_image = serializers.FileField(required=False, allow_null=True)
     completion_percentage = serializers.SerializerMethodField()
@@ -123,7 +129,7 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             'id', 'username', 'mobile_or_email', 'user_type', 'selected_role', 'selected_primary_industry',
-            'selected_primary_skill', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age',
+            'selected_primary_skill', 'role_name', 'primary_industry_name', 'primary_skill_name', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age',
             'location', 'height', 'weight', 'view_count','followers_count', 'following_count', 'is_verified', 'completion_percentage'
         ]
         read_only_fields = ['id', 'user', 'view_count', 'is_verified', 'completion_percentage']

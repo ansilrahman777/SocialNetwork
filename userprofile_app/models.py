@@ -282,7 +282,7 @@ class DocumentUpload(models.Model):
 class UnionAssociation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)  # Name of the Union or Association
-    member_since = models.DateField()
+    member_since = models.CharField(max_length=20,null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} - Member since {self.member_since}"
