@@ -26,27 +26,65 @@ class SkillSerializer(serializers.ModelSerializer):
 
 class ExperienceSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Allow writing user
-    start_date = serializers.DateField()
-    end_date = serializers.DateField(required=False)
+    start_month = serializers.CharField(write_only=True)
+    start_year = serializers.CharField(write_only=True)
+    end_month = serializers.CharField(write_only=True, required=False)
+    end_year = serializers.CharField(write_only=True, required=False)
+
+    start_date = serializers.CharField(read_only=True)  # Used for output as a combined field
+    end_date = serializers.CharField(read_only=True, required=False)
+
 
     class Meta:
         model = Experience
-        fields = ['id', 'user', 'job_title', 'company_name', 'work_type', 'start_date', 'end_date', 'is_current']
+        fields = [
+            'id', 'user', 'job_title', 'company_name', 'work_type', 
+            'start_month', 'start_year', 'end_month', 'end_year', 
+            'start_date', 'end_date', 'is_current'
+        ]
         read_only_fields = ['id']
 
-    def validate(self, data):
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
 
-        if end_date and start_date and end_date < start_date:
-            raise serializers.ValidationError("End date must be after the start date.")
-        
+    def create(self, validated_data):
+        # Extract month and year fields and format them into start_date and end_date
+        start_month = validated_data.pop('start_month')
+        start_year = validated_data.pop('start_year')
+        validated_data['start_date'] = f"{start_month} {start_year}"
+
+        end_month = validated_data.pop('end_month', None)
+        end_year = validated_data.pop('end_year', None)
+        validated_data['end_date'] = f"{end_month} {end_year}" if end_month and end_year else None
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Similar logic for updating an existing instance
+        start_month = validated_data.pop('start_month', None)
+        start_year = validated_data.pop('start_year', None)
+        if start_month and start_year:
+            validated_data['start_date'] = f"{start_month} {start_year}"
+
+        end_month = validated_data.pop('end_month', None)
+        end_year = validated_data.pop('end_year', None)
+        if end_month and end_year:
+            validated_data['end_date'] = f"{end_month} {end_year}"
+
+        return super().update(instance, validated_data)
+    
+
+    def validate(self, data):
+        # Ensure end_date (if provided) is after start_date
+        if 'end_month' in data and 'end_year' in data and 'start_month' in data and 'start_year' in data:
+            start_date = f"{data['start_month']} {data['start_year']}"
+            end_date = f"{data['end_month']} {data['end_year']}"
+            # Optional: Add logic here to compare dates if required
         return data
 
 class EducationSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Allow writing user
-    start_date = serializers.DateField()
-    end_date = serializers.DateField(required=False)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    start_date = serializers.CharField()  # Use CharField for start_date
+    end_date = serializers.CharField(required=False)  # Use CharField for end_date
+
 
     class Meta:
         model = Education
@@ -57,8 +95,14 @@ class EducationSerializer(serializers.ModelSerializer):
         start_date = data.get('start_date')
         end_date = data.get('end_date')
 
-        if end_date and start_date and end_date < start_date:
-            raise serializers.ValidationError("End date must be after the start date.")
+        if end_date and start_date:
+            # Split the dates into month and year for validation
+            start_month, start_year = start_date.split()
+            end_month, end_year = end_date.split()
+            start_year, end_year = int(start_year), int(end_year)
+
+            if end_year < start_year or (end_year == start_year and end_month < start_month):
+                raise serializers.ValidationError("End date must be after the start date.")
         
         return data
 

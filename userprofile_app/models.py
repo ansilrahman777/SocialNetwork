@@ -32,8 +32,8 @@ class Experience(models.Model):
     job_title = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255,null=True, blank=True)
     work_type = models.CharField(max_length=50,null=True, blank=True)
-    start_date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
+    start_date = models.CharField(max_length=20)
+    end_date = models.CharField(max_length=20,null=True, blank=True)
     is_current = models.BooleanField(default=False)
 
     def __str__(self):
@@ -44,8 +44,8 @@ class Education(models.Model):
     degree = models.CharField(max_length=255)
     field_of_study = models.CharField(max_length=255,null=True, blank=True)
     institution_name = models.CharField(max_length=255,null=True, blank=True)
-    start_date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
+    start_date = models.CharField(max_length=20)
+    end_date = models.CharField(max_length=20,null=True, blank=True)
     is_current = models.BooleanField(default=False)
 
     def __str__(self):
