@@ -39,18 +39,17 @@ class CastingCallSerializer(serializers.ModelSerializer):
 
 # Project Serializer
 class ProjectSerializer(serializers.ModelSerializer):
+    project_id = serializers.IntegerField(source='id', read_only=True)
     class Meta:
         model = Project
-        fields = ['project_title', 'project_tagline', 'film_name', 'film_role', 
-                  'project_status', 'progress_percentage', 'project_type', 'language', 
-                  'description', 'primary_email', 'secondary_email', 'team', 
-                  'media_files', 'hashtags', 'press_release_link', 
-                  'media_release_link', 'social_media_links', 'genre']
+        fields = [
+            'project_id','user','project_title','project_tagline','film_name','film_role',
+            'project_status','progress_percentage','project_type','language','description',
+            'primary_email','secondary_email','team_name','artist_name','role','image_files',
+            'video_files','hashtags','press_release_link','media_release_link','social_media_links',
+            'genre','created_at'
+        ]
 
-    def create(self, validated_data):
-        user = self.context['request'].user  # Get the user from the request
-        project = Project.objects.create(user=user, **validated_data)
-        return project
 
 
 class BankDetailsSerializer(serializers.ModelSerializer):

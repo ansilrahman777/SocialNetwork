@@ -101,7 +101,7 @@ def document_upload_to(instance, filename):
     return custom_upload_to(instance, filename, 'documents')
 
 def project_upload_to(instance, filename):
-    project_title_slug = slugify(instance.project.project_title)
+    project_title_slug = slugify(instance.project_title)
     
     extension = os.path.splitext(filename)[1].lower()
     if extension in ['.jpg', '.jpeg', '.png', '.gif']:

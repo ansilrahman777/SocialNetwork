@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from posts_app.backblaze_custom_storage import CustomBackblazeStorage, project_upload_to
 
 
 CustomUser = get_user_model()
@@ -101,8 +102,23 @@ class Project(models.Model):
     description = models.TextField()
     primary_email = models.EmailField()
     secondary_email = models.EmailField()
-    team = models.JSONField()  # JSON for team section
-    media_files = models.JSONField()  # JSON for media files (photos, videos)
+    team_name = models.CharField(max_length=255, blank=True, null=True)  # New field for team name
+    artist_name = models.CharField(max_length=255, blank=True, null=True)  # New field for artist name
+    role = models.CharField(max_length=255, blank=True, null=True)  # New field for role
+    
+    # Separate fields for image and video uploads
+    image_files = models.ImageField(
+        storage=CustomBackblazeStorage(),
+        upload_to=project_upload_to,
+        blank=True,
+        null=True
+    )
+    video_files = models.FileField(
+        storage=CustomBackblazeStorage(),
+        upload_to=project_upload_to,
+        blank=True,
+        null=True
+    )
     hashtags = models.JSONField()  # JSON for hashtags
     press_release_link = models.URLField(null=True, blank=True)
     media_release_link = models.URLField(null=True, blank=True)
