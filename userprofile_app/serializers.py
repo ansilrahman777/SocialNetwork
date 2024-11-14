@@ -129,7 +129,7 @@ class ProfileCreateSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             'id', 'username', 'mobile_or_email', 'user_type', 'selected_role', 'selected_primary_industry',
-            'selected_primary_skill', 'role_name', 'primary_industry_name', 'primary_skill_name', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age',
+            'selected_primary_skill', 'role_name', 'primary_industry_name', 'primary_skill_name', 'cover_image', 'profile_image', 'bio', 'date_of_birth', 'age', 'gender',
             'location', 'height', 'weight', 'view_count','followers_count', 'following_count', 'is_verified', 'completion_percentage'
         ]
         read_only_fields = ['id', 'user', 'view_count', 'is_verified', 'completion_percentage']

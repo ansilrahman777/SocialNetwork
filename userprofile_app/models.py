@@ -80,6 +80,7 @@ class Profile(models.Model):
     bio = models.TextField(null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     age = models.IntegerField(null=True, blank=True)
+    gender = models.CharField(max_length=50, null=True, blank=True)
     location = models.CharField(max_length=255, null=True, blank=True)
     height = models.FloatField(null=True, blank=True)
     weight = models.PositiveIntegerField( null=True, blank=True)
