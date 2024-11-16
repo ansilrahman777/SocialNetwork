@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 from .models import Profile, ProfileView, Role, Industry, Skill, Experience, Education, UnionAssociation
 from .serializers import AadharVerificationSerializer, DLVerificationSerializer, DocumentUploadSerializer, ExperienceSerializer, EducationSerializer, PassportVerificationSerializer, ProfileCompletionStatusSerializer, ProfileCreateSerializer, RoleSerializer, IndustrySerializer, SkillSerializer, UnionAssociationSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from posts_app.backblaze_custom_storage import CustomBackblazeStorage
+from crea_app.storages import UthoStorage
 from rest_framework.views import APIView
 
 User = get_user_model()
@@ -472,9 +472,9 @@ class ProfileViewSet(viewsets.ViewSet):
         profile_url = f"myapp://profile/{profile.user_id}/"  # Use app's custom scheme
 
         qr_code_filename = f"user_{profile.user.username}_qr.png"
-        qr_code_path = f"user/{profile.user.id}_{profile.user.username}/qr/{qr_code_filename}"
+        qr_code_path = f"profiles/{profile.user.id}_{profile.user.username}/qr/{qr_code_filename}"
 
-        storage = CustomBackblazeStorage()
+        storage = UthoStorage()
 
         # Check if the QR code already exists on Backblaze
         if storage.exists(qr_code_path):

@@ -195,12 +195,20 @@ B2_STORAGE_CLASS = 'crea_app.backblaze_storage.B2Storage'
 B2_BUCKET_NAME = "crea-onboarding"
 END_POINT_URL = "s3.us-east-005.backblazeb2.com"
 
+# B2_ACCOUNT_ID = '005c8a756e62b540000000001'  # Replace with your Account ID
+# B2_APPLICATION_KEY = 'K005+sxUQVfnQvXNxw4NL6F3+nzz9DA'  # Replace with your Application Key
+# B2_BUCKET_ID = 'ecb87a3765e62e56923b0514'
+# B2_STORAGE_CLASS = 'crea_app.backblaze_storage.B2Storage'
+# B2_BUCKET_NAME = "crea-b2"
+# END_POINT_URL = "s3.us-east-005.backblazeb2.com"
+# REGION = "us-east-005"
 
-# Configure default file storage
-# DEFAULT_FILE_STORAGE = 'storages.backends.b2.B2Storage'
+UTHO_STORAGE_ACCESS_KEY = 'hdxCta4HqMbKpIZPR8vO2jWUe3E7QNycGgol'
+UTHO_STORAGE_SECRET_KEY = 'XRFIic7uqE3S8mtW59V2Ygn6BrhGfUQLwTyj'
+UTHO_STORAGE_BUCKET_NAME = 'creap2'
+UTHO_STORAGE_REGION = 'innoida'
 
-# Optional: Define your B2 file path if needed
-# DEFAULT_FILE_STORAGE = 'crea_app.backblaze_storage.BackblazeStorage'
+DEFAULT_FILE_STORAGE = 'crea_app.storages.UthoStorage'
 
 DJANGO_SETTINGS_MODULE='crea.settings'
 

@@ -172,26 +172,22 @@ class HeadshotViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def create(self, request):
-        data = request.data.copy()
-        data['user'] = request.user.id
-        
         banner = request.FILES.get('banner')
         if banner and not banner.content_type.startswith('image/'):
             return Response({
                 "status": "error",
                 "message": "Invalid file type. Only images are allowed for banners."
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = HeadshotSerializer(data=data, context={'request': request})
-        
+
+        serializer = HeadshotSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             headshot = serializer.save(user=request.user)
             return Response({
                 "status": "success",
                 "message": "Headshot created successfully.",
-                "data": HeadshotSerializer(headshot).data
+                "data": HeadshotSerializer(headshot, context={'request': request}).data
             }, status=status.HTTP_201_CREATED)
-        
+
         return Response({
             "status": "error",
             "message": "Failed to create headshot.",
@@ -199,30 +195,23 @@ class HeadshotViewSet(viewsets.ViewSet):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        try:
-            headshot = get_object_or_404(Headshot, pk=pk)
-            serializer = HeadshotSerializer(headshot)
-            return Response({
-                "status": "success",
-                "message": "Headshot retrieved successfully.",
-                "data": serializer.data
-            }, status=status.HTTP_200_OK)
-        except Headshot.DoesNotExist:
-            return Response({
-                "status": "error",
-                "message": "Headshot not found."
-            }, status=status.HTTP_404_NOT_FOUND)
+        headshot = get_object_or_404(Headshot, pk=pk)
+        serializer = HeadshotSerializer(headshot, context={'request': request})
+        return Response({
+            "status": "success",
+            "message": "Headshot retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
     def list_user_headshots(self, request, user_id=None):
         headshots = Headshot.objects.filter(user__id=user_id)
-        
         if not headshots.exists():
             return Response({
                 "status": "error",
                 "message": "No headshots found for this user."
             }, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = HeadshotSerializer(headshots, many=True)
+
+        serializer = HeadshotSerializer(headshots, many=True, context={'request': request})
         return Response({
             "status": "success",
             "message": "User headshots retrieved successfully.",

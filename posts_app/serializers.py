@@ -5,7 +5,7 @@ from userprofile_app.models import Profile
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username')
-    profile_image = serializers.URLField()
+    profile_image = serializers.FileField()
 
     class Meta:
         model = Profile

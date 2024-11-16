@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from posts_app.backblaze_custom_storage import CustomBackblazeStorage, project_upload_to
-
+from crea_app.storages import UthoStorage
+from .utils import project_upload_to
 
 CustomUser = get_user_model()
 
@@ -108,13 +108,13 @@ class Project(models.Model):
     
     # Separate fields for image and video uploads
     image_files = models.ImageField(
-        storage=CustomBackblazeStorage(),
+        storage=UthoStorage(),
         upload_to=project_upload_to,
         blank=True,
         null=True
     )
     video_files = models.FileField(
-        storage=CustomBackblazeStorage(),
+        storage=UthoStorage(),
         upload_to=project_upload_to,
         blank=True,
         null=True

@@ -3,7 +3,9 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from mimetypes import guess_type
-from .backblaze_custom_storage import CustomBackblazeStorage,  post_image_upload_to, post_video_upload_to, headshot_upload_to
+# from .backblaze_custom_storage import CustomBackblazeStorage,  post_image_upload_to, post_video_upload_to, headshot_upload_to
+from crea_app.storages import UthoStorage
+from .utils import headshot_upload_to, post_image_upload_to, post_video_upload_to
 
 User = get_user_model()
 
@@ -24,8 +26,8 @@ class Post(models.Model):
     caption = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     media = models.FileField(
-        storage=CustomBackblazeStorage(),
-        upload_to=post_image_upload_to if MEDIA_TYPE_CHOICES == 'image' else post_video_upload_to,
+        storage=UthoStorage(),
+        upload_to=post_image_upload_to,
         validators=[validate_media_type],
         blank=True,
         null=True
@@ -41,8 +43,10 @@ class Post(models.Model):
         if mime_type:
             if mime_type.startswith('image'):
                 self.media_type = 'image'
+                self.media.field.upload_to = post_image_upload_to
             elif mime_type.startswith('video'):
                 self.media_type = 'video'
+                self.media.field.upload_to = post_video_upload_to
             else:
                 raise ValidationError("Only image or video files are allowed.")
         else:
@@ -53,6 +57,7 @@ class Post(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.caption[:20]}"
 
+
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
@@ -60,6 +65,7 @@ class Like(models.Model):
 
     class Meta:
         unique_together = ('user', 'post')
+
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
@@ -70,10 +76,11 @@ class Comment(models.Model):
     def __str__(self):
         return f"{self.user.username}: {self.content[:20]}"
 
+
 class Headshot(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='headshots')
     banner = models.ImageField(
-        storage=CustomBackblazeStorage(),
+        storage=UthoStorage(),
         upload_to=headshot_upload_to,
         validators=[validate_media_type]
     )
