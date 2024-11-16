@@ -20,16 +20,16 @@ class Migration(migrations.Migration):
             model_name='project',
             name='team',
         ),
-        migrations.AddField(
-            model_name='project',
-            name='image_files',
-            field=models.ImageField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.project_upload_to),
-        ),
-        migrations.AddField(
-            model_name='project',
-            name='video_files',
-            field=models.FileField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.project_upload_to),
-        ),
+        # migrations.AddField(
+        #     model_name='project',
+        #     name='image_files',
+        #     field=models.ImageField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.project_upload_to),
+        # ),
+        # migrations.AddField(
+        #     model_name='project',
+        #     name='video_files',
+        #     field=models.FileField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.project_upload_to),
+        # ),
         migrations.CreateModel(
             name='Team',
             fields=[

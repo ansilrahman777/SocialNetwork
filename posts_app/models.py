@@ -3,7 +3,6 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from mimetypes import guess_type
-# from .backblaze_custom_storage import CustomBackblazeStorage,  post_image_upload_to, post_video_upload_to, headshot_upload_to
 from crea_app.storages import UthoStorage
 from .utils import headshot_upload_to, post_image_upload_to, post_video_upload_to
 

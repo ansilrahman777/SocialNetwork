@@ -11,14 +11,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='profile',
-            name='cover_image',
-            field=models.FileField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.profile_image_upload_to),
-        ),
-        migrations.AlterField(
-            model_name='profile',
-            name='profile_image',
-            field=models.FileField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.profile_image_upload_to),
-        ),
+        # migrations.AlterField(
+        #     model_name='profile',
+        #     name='cover_image',
+        #     field=models.FileField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.profile_image_upload_to),
+        # ),
+        # migrations.AlterField(
+        #     model_name='profile',
+        #     name='profile_image',
+        #     field=models.FileField(blank=True, null=True, storage=posts_app.backblaze_custom_storage.CustomBackblazeStorage(), upload_to=posts_app.backblaze_custom_storage.profile_image_upload_to),
+        # ),
     ]

@@ -73,6 +73,21 @@ class PostViewSet(viewsets.ViewSet):
                 "message": "An error occurred while retrieving videos.",
                 "details": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+    def delete_post(self, request, pk=None):
+        post = get_object_or_404(Post, pk=pk)
+        
+        if post.user != request.user:
+            return Response({
+                "status": "error",
+                "message": "You do not have permission to delete this post."
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        post.delete()
+        return Response({
+            "status": "success",
+            "message": "Post deleted successfully"
+        }, status=status.HTTP_200_OK)
 
 
     def like(self, request, pk=None):
