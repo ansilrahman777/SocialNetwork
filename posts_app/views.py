@@ -7,88 +7,121 @@ from .models import Headshot, Post, Like, Comment
 from .serializers import HeadshotSerializer, PostSerializer, LikeSerializer, CommentSerializer
 from userprofile_app.models import Profile
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+from datetime import timedelta
 
 User = get_user_model() 
 
 class PostViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
+    def perform_cleanup(self):
+        """
+        Automatically cleanup posts that were soft-deleted more than 90 days ago.
+        """
+        threshold_date = timezone.now() - timedelta(days=90)
+        expired_posts = Post.objects.filter(deleted_at__lte=threshold_date)
+        expired_count = expired_posts.count()
+        expired_posts.delete()  # Permanently delete posts
+        return expired_count
+
     def create(self, request):
+        self.perform_cleanup()
         serializer = PostSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             post = serializer.save(user=request.user)
             return Response({
                 "status": "success",
-                "message": "Post created successfully",
+                "message": "Post created successfully.",
                 "data": PostSerializer(post).data
             }, status=status.HTTP_201_CREATED)
         return Response({
             "status": "error",
-            "message": "Failed to create post",
+            "message": "Post creation failed.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    def list_images(self, request, user_id=None):
-        try:
-            user = get_object_or_404(User, pk=user_id)
-            images = Post.objects.filter(media_type='image', user=user)
-            if not images.exists():
-                return Response({
-                    "status": "error",
-                    "message": "No images found for this user."
-                }, status=status.HTTP_404_NOT_FOUND)
-
-            serializer = PostSerializer(images, many=True)
-            return Response({
-                "status": "success",
-                "message": "Images retrieved successfully",
-                "data": serializer.data
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                "status": "error",
-                "message": "An error occurred while retrieving images.",
-                "details": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def list_videos(self, request, user_id=None):
-        try:
-            user = get_object_or_404(User, pk=user_id)
-            videos = Post.objects.filter(media_type='video', user=user)
-            if not videos.exists():
-                return Response({
-                    "status": "error",
-                    "message": "No videos found for this user."
-                }, status=status.HTTP_404_NOT_FOUND)
-
-            serializer = PostSerializer(videos, many=True)
-            return Response({
-                "status": "success",
-                "message": "Videos retrieved successfully",
-                "data": serializer.data
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                "status": "error",
-                "message": "An error occurred while retrieving videos.",
-                "details": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
     def delete_post(self, request, pk=None):
-        post = get_object_or_404(Post, pk=pk)
-        
-        if post.user != request.user:
+        """Soft-delete a post."""
+        self.perform_cleanup()  # Trigger cleanup
+        post = get_object_or_404(Post, pk=pk, user=request.user)
+
+        if post.deleted_at:
             return Response({
                 "status": "error",
-                "message": "You do not have permission to delete this post."
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        post.delete()
+                "message": "This post has already been deleted."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        post.deleted_at = timezone.now()
+        post.save()
         return Response({
             "status": "success",
-            "message": "Post deleted successfully"
+            "message": "Post soft-deleted successfully. It can be restored within 90 days."
         }, status=status.HTTP_200_OK)
 
+    def list_deleted_posts(self, request):
+        """List all soft-deleted posts for the authenticated user."""
+        self.perform_cleanup()  # Trigger cleanup
+        deleted_posts = Post.objects.filter(user=request.user, deleted_at__isnull=False)
+        if not deleted_posts.exists():
+            return Response({
+                "status": "error",
+                "message": "No deleted posts found."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PostSerializer(deleted_posts, many=True)
+        return Response({
+            "status": "success",
+            "message": "Deleted posts retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def restore_post(self, request, pk=None):
+        """Restore a soft-deleted post."""
+        self.perform_cleanup()  # Trigger cleanup
+        post = get_object_or_404(Post, pk=pk, user=request.user)
+
+        if not post.deleted_at:
+            return Response({
+                "status": "error",
+                "message": "This post is not deleted."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if timezone.now() - post.deleted_at > timedelta(days=90):
+            return Response({
+                "status": "error",
+                "message": "The restore period for this post has expired."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        post.restore()
+        return Response({
+            "status": "success",
+            "message": "Post restored successfully."
+        }, status=status.HTTP_200_OK)
+
+    def list_images(self, request, user_id=None):
+        """List active image posts for the user."""
+        self.perform_cleanup()  # Trigger cleanup
+        user = get_object_or_404(User, pk=user_id)
+        images = Post.objects.filter(user=user, media_type='image', deleted_at__isnull=True)
+        serializer = PostSerializer(images, many=True)
+        return Response({
+            "status": "success",
+            "message": "Image posts retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def list_videos(self, request, user_id=None):
+        """List active video posts for the user."""
+        self.perform_cleanup()  # Trigger cleanup
+        user = get_object_or_404(User, pk=user_id)
+        videos = Post.objects.filter(user=user, media_type='video', deleted_at__isnull=True)
+        serializer = PostSerializer(videos, many=True)
+        return Response({
+            "status": "success",
+            "message": "Video posts retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
     def like(self, request, pk=None):
         post = get_object_or_404(Post, pk=pk)

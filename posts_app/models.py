@@ -33,25 +33,32 @@ class Post(models.Model):
     )
     media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        if not self.media:
+        if not self.media and not self.deleted_at:
             raise ValidationError("A media file (image or video) is required.")
-        
-        mime_type, _ = guess_type(self.media.name)
-        if mime_type:
-            if mime_type.startswith('image'):
-                self.media_type = 'image'
-                self.media.field.upload_to = post_image_upload_to
-            elif mime_type.startswith('video'):
-                self.media_type = 'video'
-                self.media.field.upload_to = post_video_upload_to
+
+        if not self.deleted_at:
+            mime_type, _ = guess_type(self.media.name)
+            if mime_type:
+                if mime_type.startswith('image'):
+                    self.media_type = 'image'
+                    self.media.field.upload_to = post_image_upload_to
+                elif mime_type.startswith('video'):
+                    self.media_type = 'video'
+                    self.media.field.upload_to = post_video_upload_to
+                else:
+                    raise ValidationError("Only image or video files are allowed.")
             else:
-                raise ValidationError("Only image or video files are allowed.")
-        else:
-            raise ValidationError("Cannot determine the file type. Only images and videos are allowed.")
+                raise ValidationError("Cannot determine the file type. Only images and videos are allowed.")
 
         super().save(*args, **kwargs)
+
+    def restore(self):
+        """Restore the post by clearing the `deleted_at` field."""
+        self.deleted_at = None
+        self.save()
 
     def __str__(self):
         return f"{self.user.username} - {self.caption[:20]}"
