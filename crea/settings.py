@@ -14,7 +14,6 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-from decouple import config, Csv
 from datetime import timedelta
 
 
@@ -177,36 +176,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CSRF_COOKIE_SECURE = False
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'connect@artiztnetwork.com'  # your email
-EMAIL_HOST_PASSWORD = 'istz tnfx jjwy cslm'  # App Password if 2FA is enabled
-DEFAULT_FROM_EMAIL = 'connect@artiztnetwork.com'
-
-
-
-B2_ACCOUNT_ID = '0055668acec6f400000000007'  # Replace with your Account ID
-B2_APPLICATION_KEY = 'K005CQRVl9H+5mxfqK0DE0MtezgziUU'  # Replace with your Application Key
-B2_BUCKET_ID = 'f576e6c88aec9eec962f0410'
-B2_FOLDER_NAME = 'onboarding-images'
-B2_STORAGE_CLASS = 'crea_app.backblaze_storage.B2Storage'
-B2_BUCKET_NAME = "crea-onboarding"
-END_POINT_URL = "s3.us-east-005.backblazeb2.com"
-
-# B2_ACCOUNT_ID = '005c8a756e62b540000000001'  # Replace with your Account ID
-# B2_APPLICATION_KEY = 'K005+sxUQVfnQvXNxw4NL6F3+nzz9DA'  # Replace with your Application Key
-# B2_BUCKET_ID = 'ecb87a3765e62e56923b0514'
-# B2_STORAGE_CLASS = 'crea_app.backblaze_storage.B2Storage'
-# B2_BUCKET_NAME = "crea-b2"
-# END_POINT_URL = "s3.us-east-005.backblazeb2.com"
-# REGION = "us-east-005"
-
-UTHO_STORAGE_ACCESS_KEY = 'hdxCta4HqMbKpIZPR8vO2jWUe3E7QNycGgol'
-UTHO_STORAGE_SECRET_KEY = 'XRFIic7uqE3S8mtW59V2Ygn6BrhGfUQLwTyj'
-UTHO_STORAGE_BUCKET_NAME = 'creap2'
-UTHO_STORAGE_REGION = 'innoida'
 
 DEFAULT_FILE_STORAGE = 'crea_app.storages.UthoStorage'
 
@@ -221,57 +190,34 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 load_dotenv()
 
+# Use os.getenv() to access your sensitive data
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_HOST_USER')
+
+B2_ACCOUNT_ID = os.getenv('B2_ACCOUNT_ID')
+B2_APPLICATION_KEY = os.getenv('B2_APPLICATION_KEY')
+B2_BUCKET_ID = os.getenv('B2_BUCKET_ID')
+B2_FOLDER_NAME = os.getenv('B2_FOLDER_NAME')
+B2_STORAGE_CLASS = 'crea_app.backblaze_storage.B2Storage'
+B2_BUCKET_NAME = os.getenv('B2_BUCKET_NAME')
+END_POINT_URL = os.getenv('END_POINT_URL')
+
+UTHO_STORAGE_ACCESS_KEY = os.getenv('UTHO_STORAGE_ACCESS_KEY')
+UTHO_STORAGE_SECRET_KEY = os.getenv('UTHO_STORAGE_SECRET_KEY')
+UTHO_STORAGE_BUCKET_NAME = os.getenv('UTHO_STORAGE_BUCKET_NAME')
+UTHO_STORAGE_REGION = os.getenv('UTHO_STORAGE_REGION')
+
+DEFAULT_FILE_STORAGE = 'crea_app.storages.UthoStorage'
+
 MSG91_API_KEY = os.getenv('MSG91_API_KEY')
 MSG91_SMS_TEMPLATE_ID = os.getenv('MSG91_SMS_TEMPLATE_ID')
 MSG91_SMS_SENDER_ID = os.getenv('MSG91_SMS_SENDER_ID')
 MSG91_EMAIL_SENDER_NAME = os.getenv('MSG91_EMAIL_SENDER_NAME')
-import os
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin.exceptions import FirebaseError
-import logging
-import base64
 
 
-# Fix Base64 String Function
-def fix_base64_string(token):
-    # Add padding to make the length a multiple of 4
-    padding_needed = len(token) % 4
-    if padding_needed:
-        token += '=' * (4 - padding_needed)
-    return token
 
-# Decode JWT Function
-def decode_jwt(token):
-    parts = token.split('.')
-    # Decode the payload
-    if len(parts) != 3:
-        print("Invalid token format.")
-        return None
-    try:
-        payload = base64.urlsafe_b64decode(fix_base64_string(parts[1]))
-        print("Decoded Payload:", payload)
-    except Exception as e:
-        print("Error decoding token:", e)
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Load Firebase service account key
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # This points to the directory containing the JSON
-cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", os.path.join(BASE_DIR, "serviceAccountKey.json"))  # Use environment variable
-
-# Check if the credential file exists
-if not os.path.exists(cred_path):
-    raise FileNotFoundError(f"The service account key file does not exist at the path: {cred_path}")
-
-# Initialize Firebase
-try:
-    cred = credentials.Certificate(cred_path)
-    firebase_app = firebase_admin.initialize_app(cred)
-    logger.info("Firebase initialized successfully.")
-except FirebaseError as e:
-    logger.error(f"Error initializing Firebase: {e}")
-except Exception as e:
-    logger.error(f"An unexpected error occurred: {e}")

@@ -15,7 +15,6 @@ from .models import CustomUser, OTPVerification, UserSession
 from .serializers import UserSerializer,RegisterSerializer, OTPSerializer
 from django.core.mail import send_mail
 from .serializers import RegisterSerializer
-from drf_yasg.utils import swagger_auto_schema
 import random
 from rest_framework import generics
 from .models import PasswordResetRequest
@@ -30,13 +29,10 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from .serializers import LogoutSerializer, UserSerializer, RegisterSerializer, OTPSerializer, ResetPasswordSerializer, ChangePasswordSerializer, OnboardingImageSerializer
 from .models import CustomUser, OTPVerification, UserSession, OnboardingImage, PasswordResetRequest
 from .backblaze_storage import upload_to_backblaze
-from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
-from firebase_admin import auth as firebase_auth
 from rest_framework_simplejwt.tokens import RefreshToken
-from firebase_admin import auth as firebase_auth
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 
@@ -190,7 +186,6 @@ class OnboardingAPIView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]  # Ensure this is defined correctly
-    @swagger_auto_schema(request_body=RegisterSerializer)
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -322,54 +317,6 @@ class LoginView(APIView):
                 "status": "error",
                 "message": "User does not exist"
             }, status=status.HTTP_404_NOT_FOUND)
-
-    def handle_google_login(self, google_token):
-        if not google_token:
-            return Response({
-                "status": "error",
-                "message": "Google token must not be empty."
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            decoded_token = firebase_auth.verify_id_token(google_token)
-            email = decoded_token.get('email')
-
-            user, _ = CustomUser.objects.get_or_create(
-                mobile_or_email=email,
-                defaults={"user_status": "active"}
-            )
-            refresh = RefreshToken.for_user(user)
-            return self.generate_response(user, refresh, "2")  # Pass "2" for Google login
-
-        except Exception as e:  # Catch any Firebase-related errors
-            return Response({
-                "status": "error",
-                "message": "Invalid Google token. " + str(e)
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
-    def handle_apple_login(self, apple_token):
-        if not apple_token:
-            return Response({
-                "status": "error",
-                "message": "Apple token must not be empty."
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            decoded_token = firebase_auth.verify_id_token(apple_token)
-            email = decoded_token.get('email')
-
-            user, _ = CustomUser.objects.get_or_create(
-                mobile_or_email=email,
-                defaults={"user_status": "active"}
-            )
-            refresh = RefreshToken.for_user(user)
-            return self.generate_response(user, refresh, "3")  # Pass "3" for Apple login
-
-        except Exception as e:  # Catch any Firebase-related errors
-            return Response({
-                "status": "error",
-                "message": "Invalid Apple token. " + str(e)
-            }, status=status.HTTP_401_UNAUTHORIZED)
 
     # Helper function to generate the response with tokens
     def generate_response(self, user, refresh, login_method):
